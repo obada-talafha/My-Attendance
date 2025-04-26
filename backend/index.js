@@ -8,7 +8,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const users = {
-  'admin@example.com': { password: 'admin123', role: 'admin' },
+  'a': { password: 'a', role: 'admin' },
   'instructor@example.com': { password: 'instructor123', role: 'instructor' },
   'student@example.com': { password: 'student123', role: 'student' },
 };

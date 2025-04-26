@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/auth_service.dart';
 import 'StudentManagementPage.dart';
 import 'coursemanage/course_management_page.dart';
 import 'instructor_management_page.dart';
 import 'admin_management_page.dart';
+import 'admin_drawer.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -19,13 +21,11 @@ class AdminDashboard extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6FAFF),
+      drawer: const AdminDrawer(), // 👈 Add the drawer here
       appBar: AppBar(
         backgroundColor: const Color(0xFFF6FAFF),
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.black),
-          onPressed: () {},
-        ),
+        iconTheme: const IconThemeData(color: Colors.black),
         title: Text(
           'Admin Dashboard',
           style: GoogleFonts.jost(
@@ -47,7 +47,6 @@ class AdminDashboard extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             if (constraints.maxWidth > 600) {
-              // 🖥 Web / Tablet
               return Center(
                 child: Wrap(
                   spacing: 16,
@@ -67,7 +66,6 @@ class AdminDashboard extends StatelessWidget {
                 ),
               );
             } else {
-              // 📱 Mobile
               return ListView.separated(
                 itemCount: buttons.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -139,7 +137,8 @@ class AdminDashboard extends StatelessWidget {
     } else if (title == 'Instructors') {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const InstructorManagementPage()),
+        MaterialPageRoute(
+            builder: (context) => const InstructorManagementPage()),
       );
     } else if (title == 'Admins') {
       Navigator.push(

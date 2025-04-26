@@ -17,6 +17,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   intl: ^0.18.1
   qr_flutter: ^4.0.0
+  path_provider: ^2.1.2
+  share_plus: ^7.2.1
+  excel: ^2.0.6
 
 dev_dependencies:
   flutter_test:

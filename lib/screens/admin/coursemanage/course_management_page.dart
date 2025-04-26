@@ -1,17 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'CreateCoursePage.dart'; // Ensure this import is correct
+import 'CreateCoursePage.dart';
+import 'view_courses_page.dart';
+import 'DeleteCoursePage.dart'; // <<-- Don't forget to import
 
 class CourseManagementPage extends StatelessWidget {
   const CourseManagementPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> actions = [
-      {'label': 'View', 'icon': Icons.visibility},
-      {'label': 'Edit', 'icon': Icons.edit},
-      {'label': 'Add', 'icon': Icons.add},
-      {'label': 'Delete', 'icon': Icons.delete},
+    final List<_ActionItem> actions = [
+      _ActionItem(
+        label: 'View and Edit',
+        icon: Icons.visibility,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ViewCoursesPage()),
+        ),
+      ),
+      _ActionItem(
+        label: 'Create',
+        icon: Icons.add,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CreateCoursePage()),
+        ),
+      ),
+      _ActionItem(
+        label: 'Delete',
+        icon: Icons.delete,
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const DeleteCoursePage()),
+        ),
+      ),
     ];
 
     return Scaffold(
@@ -28,7 +50,7 @@ class CourseManagementPage extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             if (constraints.maxWidth > 600) {
-              // Web/tablet layout
+              // Tablet / Web layout
               return Center(
                 child: Wrap(
                   spacing: 16,
@@ -38,18 +60,17 @@ class CourseManagementPage extends StatelessWidget {
                       .map((action) => SizedBox(
                     width: 240,
                     height: 140,
-                    child: _buildActionTile(context, action),
+                    child: _buildActionTile(action),
                   ))
                       .toList(),
                 ),
               );
             } else {
-              // Phone layout
+              // Mobile layout
               return ListView.separated(
                 itemCount: actions.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) =>
-                    _buildActionTile(context, actions[index]),
+                itemBuilder: (context, index) => _buildActionTile(actions[index]),
               );
             }
           },
@@ -58,48 +79,46 @@ class CourseManagementPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActionTile(BuildContext context, Map<String, dynamic> action) {
-    return GestureDetector(
-      onTap: () {
-        if (action['label'] == 'Add') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CreateCoursePage(),
-            ),
-          );
-        }
-        // Add other logic here for View, Edit, Delete
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 5,
-              offset: const Offset(0, 1),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(action['icon'], size: 32, color: Colors.blueAccent),
-            const SizedBox(height: 10),
-            Text(
-              action['label'],
-              style: GoogleFonts.jost(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+  Widget _buildActionTile(_ActionItem action) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      elevation: 2,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: action.onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(action.icon, size: 32, color: Colors.blueAccent),
+              const SizedBox(height: 10),
+              Text(
+                action.label,
+                style: GoogleFonts.jost(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+// Helper class to organize action items
+class _ActionItem {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  _ActionItem({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
 }

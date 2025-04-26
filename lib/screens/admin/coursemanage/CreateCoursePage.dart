@@ -15,18 +15,27 @@ class _CreateCoursePageState extends State<CreateCoursePage> {
   final TextEditingController _courseNameController = TextEditingController();
   final TextEditingController _secNumController = TextEditingController();
   final TextEditingController _lineNumController = TextEditingController();
-  final TextEditingController _instructorController = TextEditingController();
+  final TextEditingController _hallController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
 
   String? _selectedCollege;
   String? _selectedDepartment;
   String? _selectedCreditHours;
+  String? _selectedInstructor;
   String? _selectedDays;
 
-  final List<String> colleges = ['Engineering', 'Business', 'Arts', 'Science'];
-  final List<String> departments = ['CS', 'IT', 'Math', 'Physics'];
+  final List<String> colleges = ['Information Technology'];
+  final List<String> departments = ['CS', 'SE', 'CYP', 'AI'];
   final List<String> creditHours = ['1', '2', '3', '4', '5'];
   final List<String> daysOptions = ['Sun/Tue', 'Mon/Wed', 'Tue/Thu'];
+
+  // This list would normally come from your database
+  final List<String> instructors = [
+    'Dr. John Doe',
+    'Dr. Sarah Smith',
+    'Prof. Ahmed Ali',
+    'Dr. Huda Al-Zoubi',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +57,8 @@ class _CreateCoursePageState extends State<CreateCoursePage> {
               _buildDropdown(label: 'College', value: _selectedCollege, items: colleges, onChanged: (val) => setState(() => _selectedCollege = val)),
               _buildDropdown(label: 'Department', value: _selectedDepartment, items: departments, onChanged: (val) => setState(() => _selectedDepartment = val)),
               _buildDropdown(label: 'Credit Hours', value: _selectedCreditHours, items: creditHours, onChanged: (val) => setState(() => _selectedCreditHours = val)),
-              _buildTextField(label: 'Instructor Name', controller: _instructorController),
+              _buildDropdown(label: 'Instructor', value: _selectedInstructor, items: instructors, onChanged: (val) => setState(() => _selectedInstructor = val)),
+              _buildTextField(label: 'Hall', controller: _hallController, hint: 'e.g. Building B, Room 102'),
               _buildDropdown(label: 'Days', value: _selectedDays, items: daysOptions, onChanged: (val) => setState(() => _selectedDays = val)),
               _buildTextField(label: 'Time', controller: _timeController, hint: 'e.g. 10:00 AM - 11:30 AM'),
               const SizedBox(height: 20),
@@ -116,7 +126,7 @@ class _CreateCoursePageState extends State<CreateCoursePage> {
   void _submitForm() {
     if (_formKey.currentState?.validate() ?? false) {
       // Simulate submission logic
-      print('Course Created');
+      print('Course Created: ${_courseIdController.text}, Instructor: $_selectedInstructor');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Course created successfully!')),
       );
