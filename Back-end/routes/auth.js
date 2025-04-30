@@ -1,8 +1,9 @@
-import pool from '../db/index.js'; 
-
+import pool from '../db/index.js';
 
 // LOGIN FOR STUDENT
 const loginStudent = async (req, res) => {
+  console.log("REQ BODY (student):", req.body); // ✅ Logging request body
+
   const { email, password } = req.body;
 
   try {
@@ -15,7 +16,7 @@ const loginStudent = async (req, res) => {
       const student = result.rows[0];
       res.status(200).json({
         success: true,
-        userType: "student", 
+        userType: "student",
         user: {
           id: student.student_id,
           name: student.name,
@@ -31,10 +32,10 @@ const loginStudent = async (req, res) => {
   }
 };
 
-
-
 // LOGIN FOR ADMIN
 const loginAdmin = async (req, res) => {
+  console.log("REQ BODY (admin):", req.body); // ✅ Logging request body
+
   const { email, password } = req.body;
 
   try {
@@ -47,7 +48,7 @@ const loginAdmin = async (req, res) => {
       const admin = result.rows[0];
       res.status(200).json({
         success: true,
-        userType: "admin", 
+        userType: "admin",
         user: {
           id: admin.admin_id,
           name: admin.name,
@@ -63,10 +64,10 @@ const loginAdmin = async (req, res) => {
   }
 };
 
-
-
 // LOGIN FOR INSTRUCTOR
 const loginInstructor = async (req, res) => {
+  console.log("REQ BODY (instructor):", req.body); // ✅ Logging request body
+
   const { email, password } = req.body;
 
   try {
@@ -79,7 +80,7 @@ const loginInstructor = async (req, res) => {
       const instructor = result.rows[0];
       res.status(200).json({
         success: true,
-        userType: "instructor", 
+        userType: "instructor",
         user: {
           id: instructor.instructor_id,
           name: instructor.name,

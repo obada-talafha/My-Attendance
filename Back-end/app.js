@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from 'express';
+import bodyParser from 'body-parser';
 import { loginStudent, loginAdmin, loginInstructor } from './routes/auth.js';
 import { getStudentProfile } from './routes/studentController.js';
 

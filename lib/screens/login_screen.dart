@@ -15,12 +15,16 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isPasswordVisible = false;
   bool _rememberMe = false;
 
+  String selectedRole = 'student'; // Default selected role
+  final List<String> roles = ['student', 'instructor', 'admin'];
+
   void _login() async {
     setState(() => isLoading = true);
 
     final success = await AuthService.login(
       emailController.text.trim(),
       passwordController.text.trim(),
+      selectedRole, // Use selected role
     );
 
     setState(() => isLoading = false);
@@ -118,6 +122,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text("Forgot Password?"),
                   ),
                 ],
+              ),
+              const SizedBox(height: 20),
+              DropdownButtonFormField<String>(
+                value: selectedRole,
+                decoration: InputDecoration(
+                  labelText: 'Select Role',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                ),
+                items: roles.map((role) {
+                  return DropdownMenuItem<String>(
+                    value: role,
+                    child: Text(role[0].toUpperCase() + role.substring(1)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => selectedRole = value);
+                  }
+                },
               ),
               const SizedBox(height: 20),
               ElevatedButton(

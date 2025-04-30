@@ -42,9 +42,12 @@ class StudentDrawer extends StatelessWidget {
             buildDrawerItem(
               icon: Icons.logout,
               label: 'Logout',
-              onTap: () {
-                AuthService.logout();
-                Navigator.pushReplacementNamed(context, '/login');
+              onTap: () async {
+                Navigator.pop(context); // Close the drawer
+                await AuthService.logout();
+                if (context.mounted) {
+                  Navigator.pushReplacementNamed(context, '/login');
+                }
               },
               isLogout: true,
             ),
