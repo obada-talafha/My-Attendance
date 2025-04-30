@@ -421,7 +421,7 @@ COPY public.session (session_id, course_id, sessiondate, starttime, endtime, loc
 --
 
 COPY public.student (student_id, name, email, password, academiclvl, major, gender, image, birthdate, phonenum, status) FROM stdin;
-155349	yousef	hi@gmail.com	123	3	cs	male	null	2003-11-09	791051279	Expected to graduate                              
+155349	obada	s	s	3	cs	male	null	2003-03-03	791051279	Expected to graduate                              
 \.
 
 

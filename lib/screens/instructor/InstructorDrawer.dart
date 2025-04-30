@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
-import 'student_profile_page.dart';
+import 'InstructorHomePage.dart';
+import 'InstructorProfile.dart';
 
-class StudentDrawer extends StatelessWidget {
-  const StudentDrawer({super.key});
+class Instructordrawer extends StatelessWidget {
+  const Instructordrawer({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,36 +21,42 @@ class StudentDrawer extends StatelessWidget {
               label: 'Profile',
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const StudentProfilePage(),
-                  ),
-                );
+                Future.microtask(() {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const InstructorProfile(), // Navigate to profile screen
+                    ),
+                  );
+                });
               },
             ),
             buildDrawerItem(
               icon: Icons.format_paint_outlined,
               label: 'Theme',
               onTap: null, // Disabled
+              isDisabled: true,
             ),
             buildDrawerItem(
               icon: Icons.language,
               label: 'Language',
               onTap: null, // Disabled
+              isDisabled: true,
             ),
             const Spacer(),
             buildDrawerItem(
               icon: Icons.logout,
               label: 'Logout',
-              onTap: () async {
-                Navigator.pop(context);
-                await AuthService.logout();
-                if (context.mounted) {
-                  Navigator.pushReplacementNamed(context, '/login');
-                }
-              },
               isLogout: true,
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+                Future.microtask(() async {
+                  await AuthService.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                  }
+                });
+              },
             ),
           ],
         ),
@@ -62,12 +69,12 @@ class StudentDrawer extends StatelessWidget {
     required String label,
     required VoidCallback? onTap,
     bool isLogout = false,
+    bool isDisabled = false,
   }) {
-    final bool isDisabled = onTap == null;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: InkWell(
-        onTap: onTap,
+        onTap: isDisabled ? null : onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           decoration: BoxDecoration(
@@ -80,7 +87,9 @@ class StudentDrawer extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: isLogout ? Colors.red : isDisabled ? Colors.grey : Colors.black,
+                color: isLogout
+                    ? Colors.red
+                    : (isDisabled ? Colors.grey : Colors.black),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -88,17 +97,20 @@ class StudentDrawer extends StatelessWidget {
                   label,
                   style: GoogleFonts.jost(
                     fontSize: 16,
-                    color: isLogout ? Colors.red : isDisabled ? Colors.grey : Colors.black,
+                    color: isLogout
+                        ? Colors.red
+                        : (isDisabled ? Colors.grey : Colors.black),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-              if (!isDisabled)
-                Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: isLogout ? Colors.red : Colors.black,
-                ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: isLogout
+                    ? Colors.red
+                    : (isDisabled ? Colors.grey : Colors.black),
+              ),
             ],
           ),
         ),

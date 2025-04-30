@@ -70,6 +70,26 @@ class _LoginScreenState extends State<LoginScreen> {
                 fit: BoxFit.contain,
               ),
               const SizedBox(height: 30),
+              DropdownButtonFormField<String>(
+                value: selectedRole,
+                decoration: InputDecoration(
+                  labelText: 'Select Role',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                ),
+                items: roles.map((role) {
+                  return DropdownMenuItem<String>(
+                    value: role,
+                    child: Text(role[0].toUpperCase() + role.substring(1)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => selectedRole = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 20),
               TextField(
                 controller: emailController,
                 decoration: InputDecoration(
@@ -122,26 +142,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text("Forgot Password?"),
                   ),
                 ],
-              ),
-              const SizedBox(height: 20),
-              DropdownButtonFormField<String>(
-                value: selectedRole,
-                decoration: InputDecoration(
-                  labelText: 'Select Role',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-                ),
-                items: roles.map((role) {
-                  return DropdownMenuItem<String>(
-                    value: role,
-                    child: Text(role[0].toUpperCase() + role.substring(1)),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() => selectedRole = value);
-                  }
-                },
               ),
               const SizedBox(height: 20),
               ElevatedButton(

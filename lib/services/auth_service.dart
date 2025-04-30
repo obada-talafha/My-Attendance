@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://192.168.56.1:3000'; // Update if needed
+  static const String baseUrl = 'http://192.168.1.27:3000'; // هون غير ال ip وخلي ال 300
 
   static Future<bool> login(String email, String password, String role) async {
     final endpointMap = {
