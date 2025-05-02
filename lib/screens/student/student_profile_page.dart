@@ -25,7 +25,10 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     final prefs = await SharedPreferences.getInstance();
     final studentId = prefs.getString('userId');
 
+    print('🟡 SharedPreferences userId: $studentId');
+
     if (studentId == null) {
+      print('❌ No studentId found in SharedPreferences');
       setState(() {
         isLoading = false;
       });
@@ -33,20 +36,30 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     }
 
     final url = Uri.parse('http://192.168.56.1:3000/studentProfile?student_id=$studentId');
+    print('🌐 Requesting profile from: $url');
 
     try {
       final response = await http.get(url);
+      print('🟢 Status Code: ${response.statusCode}');
+      print('🟢 Response Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        setState(() {
-          student = data['student'];
-          isLoading = false;
-        });
+        if (data['student'] != null) {
+          setState(() {
+            student = data['student'];
+            isLoading = false;
+          });
+        } else {
+          print('❌ "student" key is missing in response');
+          setState(() => isLoading = false);
+        }
       } else {
+        print('❌ Server returned status ${response.statusCode}');
         setState(() => isLoading = false);
       }
     } catch (e) {
-      print('Error: $e');
+      print('❌ Exception: $e');
       setState(() => isLoading = false);
     }
   }
@@ -113,7 +126,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
                 buildTableRow('Email', student!['email'] ?? ''),
                 buildTableRow('Birth Date', student!['birthdate'] ?? ''),
                 buildTableRow('Major', student!['major'] ?? ''),
-                buildTableRow('Academic Lvl', student!['academiclvl'].toString()),
+                buildTableRow('Academic Lvl', student!['academiclvl']?.toString() ?? ''),
                 buildTableRow('Status', student!['status'] ?? ''),
               ],
             ),

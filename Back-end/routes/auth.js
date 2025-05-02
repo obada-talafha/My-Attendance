@@ -2,7 +2,7 @@ import pool from '../db/index.js';
 
 // LOGIN FOR STUDENT
 const loginStudent = async (req, res) => {
-  console.log("REQ BODY (student):", req.body); // ✅ Logging request body
+  console.log("REQ BODY (student):", req.body);
 
   const { email, password } = req.body;
 
@@ -21,7 +21,7 @@ const loginStudent = async (req, res) => {
           id: student.student_id,
           name: student.name,
           email: student.email,
-        },
+        }
       });
     } else {
       res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -34,7 +34,7 @@ const loginStudent = async (req, res) => {
 
 // LOGIN FOR ADMIN
 const loginAdmin = async (req, res) => {
-  console.log("REQ BODY (admin):", req.body); // ✅ Logging request body
+  console.log("REQ BODY (admin):", req.body);
 
   const { email, password } = req.body;
 
@@ -53,7 +53,7 @@ const loginAdmin = async (req, res) => {
           id: admin.admin_id,
           name: admin.name,
           email: admin.email,
-        },
+        }
       });
     } else {
       res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -66,7 +66,7 @@ const loginAdmin = async (req, res) => {
 
 // LOGIN FOR INSTRUCTOR
 const loginInstructor = async (req, res) => {
-  console.log("REQ BODY (instructor):", req.body); // ✅ Logging request body
+  console.log("REQ BODY (instructor):", req.body);
 
   const { email, password } = req.body;
 
@@ -85,7 +85,7 @@ const loginInstructor = async (req, res) => {
           id: instructor.instructor_id,
           name: instructor.name,
           email: instructor.email,
-        },
+        }
       });
     } else {
       res.status(401).json({ success: false, message: 'Invalid credentials' });

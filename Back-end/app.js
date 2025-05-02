@@ -3,6 +3,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import { loginStudent, loginAdmin, loginInstructor } from './routes/auth.js';
 import { getStudentProfile } from './routes/studentController.js';
+import { getStudentCourses } from "./routes/studentHome.js"
 
 const app = express();
 app.use(cors({
@@ -15,8 +16,8 @@ app.use(express.json()); // For handling JSON requests
 app.post('/loginStudent', loginStudent);
 app.post('/loginAdmin', loginAdmin);
 app.post('/loginInstructor', loginInstructor);
+app.get('/studentHome',getStudentCourses);
 app.get('/studentProfile', getStudentProfile);
-
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);

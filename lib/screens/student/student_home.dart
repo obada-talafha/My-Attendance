@@ -1,51 +1,93 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'student_drawer.dart';
 import 'absents_page.dart';
 import 'student_notifications_page.dart';
 import 'qr_scan_page.dart';
 
+// Updated Course model
+class Course {
+  final String courseName;
+  final String sessionNum;
+  final String studentId;
+  final String days;
+  final String time;
+  final String hall;
+  final String creditHours;
+  final String instructor;
+  final String absents;
+
+  Course({
+    required this.courseName,
+    required this.sessionNum,
+    required this.studentId,
+    required this.days,
+    required this.time,
+    required this.hall,
+    required this.creditHours,
+    required this.instructor,
+    required this.absents,
+  });
+
+  factory Course.fromJson(Map<String, dynamic> json) {
+    return Course(
+      courseName: json['course_name'],
+      sessionNum: json['session_number'].toString(),
+      studentId: json['student_id'].toString(),
+      days: json['days'],
+      time: json['session_time'],
+      hall: json['session_location'],
+      creditHours: json['credit_hours'].toString(),
+      instructor: json['instructor_name'] ?? 'N/A',
+      absents: json['absents'].toString(),
+    );
+  }
+}
+
 class StudentHomePage extends StatefulWidget {
-  const StudentHomePage({Key? key}) : super(key: key);
+  const StudentHomePage({super.key});
 
   @override
   State<StudentHomePage> createState() => _StudentHomePageState();
 }
 
 class _StudentHomePageState extends State<StudentHomePage> {
-  final List<Map<String, dynamic>> courses = [
-    {
-      "title": "Computer Architecture",
-      "secNo": "3",
-      "lineNo": "152445",
-      "days": "Sun Tue",
-      "time": "10:30 - 11:30",
-      "hall": "A2-124",
-      "instructor": "Obada Talafha",
-      "creditHours": "3",
-      "absents": "3",
-      "absentDates": [
-        {"day": "Sunday", "date": "2025-03-01"},
-        {"day": "Tuesday", "date": "2025-03-03"},
-        {"day": "Sunday", "date": "2025-03-08"},
-      ],
-    },
-    {
-      "title": "Cryptography",
-      "secNo": "1",
-      "lineNo": "242524",
-      "days": "Sun Tue",
-      "time": "09:30 - 10:30",
-      "hall": "A3-102",
-      "instructor": "Dr. Ahmed Khalid",
-      "creditHours": "3",
-      "absents": "2",
-      "absentDates": [
-        {"day": "Tuesday", "date": "2025-02-25"},
-        {"day": "Sunday", "date": "2025-03-02"},
-      ],
+  List<Course> courses = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadCourses();
+  }
+
+  Future<void> loadCourses() async {
+    final studentId = '155349'; // Replace with actual logged-in student ID
+    try {
+      final url = Uri.parse('http://192.168.56.1:3000/studentHome?student_id=$studentId');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        final List data = jsonData['courses'];
+        final List<Course> loadedCourses = data.map((c) => Course.fromJson(c)).toList();
+        setState(() {
+          courses = loadedCourses;
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load courses');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error: $e");
+      }
+      setState(() => isLoading = false);
     }
-  ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +105,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>  StudentNotificationsPage(),
+                  builder: (context) => StudentNotificationsPage(),
                 ),
               );
             },
@@ -71,7 +113,28 @@ class _StudentHomePageState extends State<StudentHomePage> {
           const SizedBox(width: 16),
         ],
       ),
-      body: LayoutBuilder(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : courses.isEmpty
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.info_outline, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              'No registered courses found.',
+              style: GoogleFonts.jost(
+                fontSize: 20,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      )
+          : LayoutBuilder(
         builder: (context, constraints) {
           final isSmallScreen = constraints.maxWidth < 600;
           return Padding(
@@ -90,7 +153,17 @@ class _StudentHomePageState extends State<StudentHomePage> {
                       child: child,
                     );
                   },
-                  child: CourseCard(course: course), // ✅ no const here!
+                  child: CourseCard(course: {
+                    "title": course.courseName,
+                    "secNo": course.sessionNum,
+                    "lineNo": course.studentId,
+                    "days": course.days,
+                    "time": course.time,
+                    "hall": course.hall,
+                    "instructor": course.instructor,
+                    "creditHours": course.creditHours,
+                    "absents": course.absents,
+                  }),
                 );
               },
             ),
@@ -108,7 +181,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
                 context,
                 MaterialPageRoute(builder: (context) => const QRScanPage()),
               );
-              if (scannedCode != null) {
+              if (scannedCode != null && kDebugMode) {
                 print("Scanned QR Code: $scannedCode");
               }
             },
@@ -141,7 +214,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
 class CourseCard extends StatelessWidget {
   final Map<String, dynamic> course;
 
-  const CourseCard({Key? key, required this.course}) : super(key: key);
+  const CourseCard({super.key, required this.course});
 
   @override
   Widget build(BuildContext context) {
@@ -151,7 +224,7 @@ class CourseCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 4,
-      shadowColor: Colors.black.withOpacity(0.2),
+      shadowColor: const Color.fromRGBO(0, 0, 0, 0.2),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
@@ -187,7 +260,6 @@ class CourseCard extends StatelessWidget {
             const SizedBox(height: 10),
             AbsenceButton(
               absents: course["absents"],
-              absentDates: course["absentDates"],
               courseTitle: course["title"],
             ),
           ],
@@ -228,15 +300,13 @@ class CourseCard extends StatelessWidget {
 
 class AbsenceButton extends StatelessWidget {
   final String absents;
-  final List<Map<String, String>> absentDates;
   final String courseTitle;
 
   const AbsenceButton({
-    Key? key,
+    super.key,
     required this.absents,
-    required this.absentDates,
     required this.courseTitle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -256,7 +326,7 @@ class AbsenceButton extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) => AbsentsPage(
-                  absentDates: absentDates,
+                  absentDates: [], // Placeholder for now
                   courseTitle: courseTitle,
                 ),
               ),

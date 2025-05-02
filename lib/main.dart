@@ -3,7 +3,7 @@ import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/admin/admin_Home.dart';
 import 'screens/instructor/InstructorHomePage.dart';
-import 'screens/student/Student_Home.dart';
+import 'screens/student/student_home.dart';
 
 void main() {
   runApp(MyApp());

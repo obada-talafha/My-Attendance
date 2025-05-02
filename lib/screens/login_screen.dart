@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -24,20 +25,31 @@ class _LoginScreenState extends State<LoginScreen> {
     final success = await AuthService.login(
       emailController.text.trim(),
       passwordController.text.trim(),
-      selectedRole, // Use selected role
+      selectedRole,
     );
 
     setState(() => isLoading = false);
 
     if (success) {
-      final role = await AuthService.getUserRole();
+      final prefs = await SharedPreferences.getInstance();
+      final role = prefs.getString('role');
+      final userId = prefs.getString('userId');
+      final userName = prefs.getString('userName');
+      final userEmail = prefs.getString('userEmail');
+
+      final arguments = {
+        'userId': userId,
+        'userName': userName,
+        'userEmail': userEmail,
+        'role': role,
+      };
 
       if (role == 'admin') {
-        Navigator.pushReplacementNamed(context, '/admin');
+        Navigator.pushReplacementNamed(context, '/admin', arguments: arguments);
       } else if (role == 'instructor') {
-        Navigator.pushReplacementNamed(context, '/instructor');
+        Navigator.pushReplacementNamed(context, '/instructor', arguments: arguments);
       } else {
-        Navigator.pushReplacementNamed(context, '/student');
+        Navigator.pushReplacementNamed(context, '/student', arguments: arguments);
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
