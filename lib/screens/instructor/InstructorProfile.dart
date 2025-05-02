@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'InstructorHomePage.dart';  // Ensure this import is correct for InstructorHomePage
+import 'InstructorHomePage.dart';
 
 class InstructorProfile extends StatefulWidget {
   const InstructorProfile({super.key});
@@ -27,9 +27,7 @@ class _InstructorProfileState extends State<InstructorProfile> {
     final instructorId = prefs.getString('userId');
 
     if (instructorId == null) {
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
       return;
     }
 
@@ -84,9 +82,7 @@ class _InstructorProfileState extends State<InstructorProfile> {
           onPressed: () {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(
-                builder: (context) => InstructorHomePage(), // Navigate to InstructorHomePage
-              ),
+              MaterialPageRoute(builder: (context) => InstructorHomePage()),
             );
           },
         ),
@@ -100,15 +96,16 @@ class _InstructorProfileState extends State<InstructorProfile> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const CircleAvatar(
+            CircleAvatar(
               radius: 60,
-              backgroundImage: AssetImage('asset/profile_pic.png'),
+              backgroundImage: instructor!['image'] != null
+                  ? NetworkImage(instructor!['image'])
+                  : const AssetImage('asset/profile_pic.png') as ImageProvider,
             ),
             const SizedBox(height: 20),
             Text(
               instructor!['name'] ?? '',
-              style: GoogleFonts.jost(
-                  fontSize: 22, fontWeight: FontWeight.bold),
+              style: GoogleFonts.jost(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
             Table(
@@ -122,12 +119,10 @@ class _InstructorProfileState extends State<InstructorProfile> {
                 1: FlexColumnWidth(3),
               },
               children: [
-                buildTableRow('ID', instructor!['instructor_id'] ?? ''),
-                buildTableRow('Email', instructor!['email'] ?? ''),
-                buildTableRow('Birth Date', instructor!['birthdate'] ?? ''),
-                buildTableRow('Department', instructor!['department'] ?? ''),
-                buildTableRow('Position', instructor!['position'] ?? ''),
-                buildTableRow('Status', instructor!['status'] ?? ''),
+                buildTableRow('Birth Date', instructor!['birthdate']),
+                buildTableRow('Department', instructor!['department']),
+                buildTableRow('College', instructor!['college']),
+                buildTableRow('Phone', instructor!['phonenum']),
               ],
             ),
           ],

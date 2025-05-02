@@ -67,7 +67,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
   Future<void> loadCourses() async {
     final studentId = '155349'; // Replace with actual logged-in student ID
     try {
-      final url = Uri.parse('http://192.168.1.108:3000/studentHome?student_id=$studentId');
+      final url = Uri.parse('http://192.168.56.1:3000/studentHome?student_id=$studentId');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {

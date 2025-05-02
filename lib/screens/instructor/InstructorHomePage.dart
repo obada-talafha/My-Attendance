@@ -1,39 +1,64 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'instructor_course_page.dart';
 import 'instructordrawer.dart';
 
-class InstructorHomePage extends StatelessWidget {
-  final List<Map<String, String>> courses = [
-    {
-      "title": "Computer Architecture",
-      "code": "CS242",
-      "section": "3",
-      "time": "10:30 - 11:30",
-      "days": "Sun, Tue",
-    },
-    {
-      "title": "Cryptography",
-      "code": "CS451",
-      "section": "1",
-      "time": "09:30 - 10:30",
-      "days": "Sun, Tue",
-    },
-    {
-      "title": "Operating Systems",
-      "code": "CS332",
-      "section": "2",
-      "time": "11:30 - 12:30",
-      "days": "Mon, Wed",
-    },
-    {
-      "title": "AI Fundamentals",
-      "code": "CS481",
-      "section": "1",
-      "time": "12:30 - 01:30",
-      "days": "Sun, Tue",
-    },
-  ];
+class InstructorHomePage extends StatefulWidget {
+  const InstructorHomePage({Key? key}) : super(key: key);
+
+  @override
+  State<InstructorHomePage> createState() => _InstructorHomePageState();
+}
+
+class _InstructorHomePageState extends State<InstructorHomePage> {
+  List<Map<String, dynamic>> courses = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCourses();
+  }
+
+  Future<void> fetchCourses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final instructorId = prefs.getString('userId');
+
+    if (instructorId == null) {
+      print("Instructor ID not found");
+      return;
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.56.1:3000/instructorHome?instructor_id=$instructorId'),
+      );
+
+      print('API status: ${response.statusCode}');
+      print('API body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        setState(() {
+          courses = List<Map<String, dynamic>>.from(jsonData['courses']);
+          isLoading = false;
+        });
+      } else {
+        print('Failed to load courses');
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching courses: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   TableRow buildTableRow(String label, String value) {
     return TableRow(
@@ -94,9 +119,7 @@ class InstructorHomePage extends StatelessWidget {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.notifications_none, color: Colors.black87),
-                        onPressed: () {
-                          // Handle notifications
-                        },
+                        onPressed: () {},
                       ),
                       Positioned(
                         right: 11,
@@ -114,7 +137,11 @@ class InstructorHomePage extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: SingleChildScrollView(
+                  child: isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : courses.isEmpty
+                      ? const Center(child: Text("No courses found."))
+                      : SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),
                       child: LayoutBuilder(
@@ -149,7 +176,7 @@ class InstructorHomePage extends StatelessWidget {
                                     children: [
                                       Center(
                                         child: Text(
-                                          course["title"]!,
+                                          course["course_name"] ?? "",
                                           textAlign: TextAlign.center,
                                           style: GoogleFonts.jost(
                                             fontSize: 18,
@@ -169,10 +196,10 @@ class InstructorHomePage extends StatelessWidget {
                                           1: FlexColumnWidth(3),
                                         },
                                         children: [
-                                          buildTableRow("Code", course["code"]!),
-                                          buildTableRow("Section", course["section"]!),
-                                          buildTableRow("Time", course["time"]!),
-                                          buildTableRow("Days", course["days"]!),
+
+                                          buildTableRow("Section", course["session_number"].toString()),
+                                          buildTableRow("Time", course["session_time"] ?? ""),
+                                          buildTableRow("Days", course["days"] ?? ""),
                                         ],
                                       ),
                                       const SizedBox(height: 6),
@@ -183,8 +210,8 @@ class InstructorHomePage extends StatelessWidget {
                                               context,
                                               MaterialPageRoute(
                                                 builder: (_) => InstructorCoursePage(
-                                                  courseTitle: course["title"]!,
-                                                  courseId: course["code"]!,
+                                                  courseTitle: course["course_name"] ?? "",
+                                                  courseId: course["course_code"] ?? "",
                                                 ),
                                               ),
                                             );
