@@ -35,7 +35,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
       return;
     }
 
-    final url = Uri.parse('http://192.168.56.1:3000/studentProfile?student_id=$studentId');
+    final url = Uri.parse('http://192.168.1.108:3000/studentProfile?student_id=$studentId');
     print('🌐 Requesting profile from: $url');
 
     try {

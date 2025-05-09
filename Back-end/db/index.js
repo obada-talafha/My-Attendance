@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
-import { Pool } from 'pg';
+import pkg from 'pg';
+const { Pool } = pkg;
+
 
 dotenv.config();
 

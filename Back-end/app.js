@@ -5,9 +5,17 @@ import bodyParser from 'body-parser';
 // Import routes
 import { loginStudent, loginAdmin, loginInstructor } from './routes/auth.js';
 import { getStudentProfile } from './routes/studentController.js';
-import { getStudentCourses } from './routes/studentHome.js';
-import { getInstructorCourses } from './routes/instructorHome.js';
+import { getStudentCourses } from './routes/studentHome.js'; //changed
+import { getInstructorCourses } from './routes/instructorHome.js'; //changed
 import { getInstructorProfile } from './routes/instructorProfile.js';
+
+//new
+import { getStudentAbsences } from './routes/getStudentAbsence.js';
+import { markAbsent } from './routes/markAbsences.js';
+import { deleteAttendance } from './routes/deleteAbsences.js';
+import { getStudentsInCourse } from './routes/viewAllStudentInCourse.js';
+
+
 
 const app = express();
 
@@ -27,10 +35,14 @@ app.post('/loginInstructor', loginInstructor);
 // Student routes
 app.get('/studentHome', getStudentCourses);
 app.get('/studentProfile', getStudentProfile);
+app.get('/student-absences', getStudentAbsences);
 
 // Instructor routes
 app.get('/instructorHome', getInstructorCourses);  // Make sure this route is correct
 app.get('/instructorProfile', getInstructorProfile);
+app.get('/students-in-course', getStudentsInCourse);
+app.post('/mark-absent', markAbsent);
+app.delete('/delete-attendance', deleteAttendance);
 
 // Start server
 const PORT = 3000;  // Use 5000 to match the API's port

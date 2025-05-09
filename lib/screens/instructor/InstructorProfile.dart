@@ -31,7 +31,7 @@ class _InstructorProfileState extends State<InstructorProfile> {
       return;
     }
 
-    final url = Uri.parse('http://192.168.56.1:3000/instructorProfile?instructor_id=$instructorId');
+    final url = Uri.parse('http://192.168.1.108:3000/instructorProfile?instructor_id=$instructorId');
 
     try {
       final response = await http.get(url);
