@@ -34,7 +34,7 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.56.1:3000/instructorHome?instructor_id=$instructorId'),
+        Uri.parse('https://my-attendance-1.onrender.com/instructorHome?instructor_id=$instructorId'),
       );
 
       print('API status: ${response.statusCode}');
