@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 import pkg from 'pg';
 const { Pool } = pkg;
 
-
 dotenv.config();
 
 const pool = new Pool({
@@ -11,6 +10,9 @@ const pool = new Pool({
   database: process.env.DB_DATABASE,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
+  ssl: {
+    rejectUnauthorized: false, // ✅ Needed for Render or other managed PostgreSQL
+  }
 });
 
 export default pool;

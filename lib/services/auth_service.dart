@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  static const String baseUrl = 'http://192.168.56.1:3000';
+  // ✅ Use deployed Render backend URL
+  static const String baseUrl = 'https://my-attendance-1.onrender.com';
 
   static Future<bool> login(String email, String password, String role) async {
     final endpointMap = {
