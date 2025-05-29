@@ -40,4 +40,4 @@ const getInstructorHome = async (req, res) => {
   }
 };
 
-export { getInstructorHome };
+export { getInstructorHome as getInstructorCourses };
