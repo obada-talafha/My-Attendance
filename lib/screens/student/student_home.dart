@@ -8,7 +8,6 @@ import 'absents_page.dart';
 import 'student_notifications_page.dart';
 import 'qr_scan_page.dart';
 
-// Updated Course model
 class Course {
   final String courseName;
   final String sessionNum;
@@ -97,10 +96,19 @@ class _StudentHomePageState extends State<StudentHomePage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: true,
         iconTheme: const IconThemeData(color: Colors.black),
+        title: Text(
+          '',
+          style: GoogleFonts.jost(
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: const Icon(Icons.notifications, color: Colors.black),
             onPressed: () {
               Navigator.push(
                 context,
@@ -110,7 +118,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
               );
             },
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 8),
         ],
       ),
       body: isLoading
@@ -120,7 +128,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.info_outline, size: 64, color: Colors.grey),
+            const Icon(Icons.info_outline, size: 64, color: Colors.grey),
             const SizedBox(height: 16),
             Text(
               'No registered courses found.',

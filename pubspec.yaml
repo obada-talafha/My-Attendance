@@ -21,7 +21,6 @@ dependencies:
   share_plus: ^7.2.1
   excel: ^2.0.6
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -29,15 +28,17 @@ dev_dependencies:
   flutter_launcher_icons: ^0.13.1
   flutter_native_splash: ^2.4.0
 
+flutter:
+  uses-material-design: true
+
+  assets:
+    - asset/logo.png
+    # <-- Make sure this image exists in your asset folder
+
 flutter_icons:
   android: true
   ios: true
   image_path: "asset/logo.png"
-
-flutter:
-  uses-material-design: true
-  assets:
-    - asset/logo.png
 
 flutter_native_splash:
   color: "#ffffff"
@@ -45,4 +46,6 @@ flutter_native_splash:
   android: true
   ios: true
   web: false
-
+  android_gravity: center
+  ios_content_mode: center
+  fullscreen: true

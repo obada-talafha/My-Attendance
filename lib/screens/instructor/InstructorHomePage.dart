@@ -7,7 +7,7 @@ import 'instructor_course_page.dart';
 import 'instructordrawer.dart';
 
 class InstructorHomePage extends StatefulWidget {
-  const InstructorHomePage({Key? key}) : super(key: key);
+  const InstructorHomePage({super.key}); // Using super parameter here
 
   @override
   State<InstructorHomePage> createState() => _InstructorHomePageState();
@@ -28,7 +28,8 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
     final instructorId = prefs.getString('userId');
 
     if (instructorId == null) {
-      print("Instructor ID not found");
+      // You can use debugPrint for development logs instead of print
+      debugPrint("Instructor ID not found");
       return;
     }
 
@@ -37,8 +38,9 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
         Uri.parse('https://my-attendance-1.onrender.com/instructorHome?instructor_id=$instructorId'),
       );
 
-      print('API status: ${response.statusCode}');
-      print('API body: ${response.body}');
+      // Use debugPrint instead of print for debugging
+      debugPrint('API status: ${response.statusCode}');
+      debugPrint('API body: ${response.body}');
 
       if (response.statusCode == 200) {
         final jsonData = json.decode(response.body);
@@ -47,13 +49,13 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
           isLoading = false;
         });
       } else {
-        print('Failed to load courses');
+        debugPrint('Failed to load courses');
         setState(() {
           isLoading = false;
         });
       }
     } catch (e) {
-      print('Error fetching courses: $e');
+      debugPrint('Error fetching courses: $e');
       setState(() {
         isLoading = false;
       });
@@ -68,10 +70,7 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
           child: Center(
             child: Text(
               label,
-              style: GoogleFonts.jost(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: GoogleFonts.jost(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -80,10 +79,7 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
           child: Center(
             child: Text(
               value,
-              style: GoogleFonts.jost(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              style: GoogleFonts.jost(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -97,6 +93,14 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F9FF),
+      appBar: isSmallScreen
+          ? AppBar(
+        title: Text('Instructor Home', style: GoogleFonts.jost()),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      )
+          : null,
       drawer: isSmallScreen ? const Instructordrawer() : null,
       body: Row(
         children: [
@@ -111,31 +115,33 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
           Expanded(
             child: Column(
               children: [
-                Container(
-                  height: 60,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  alignment: Alignment.centerRight,
-                  child: Stack(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.notifications_none, color: Colors.black87),
-                        onPressed: () {},
-                      ),
-                      Positioned(
-                        right: 11,
-                        top: 11,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
+                if (!isSmallScreen)
+                  Container(
+                    height: 60,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    alignment: Alignment.centerRight,
+                    child: Stack(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.notifications_none, color: Colors.black87),
+                          onPressed: () {},
+                        ),
+                        Positioned(
+                          right: 11,
+                          top: 11,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              // Using Color with withAlpha() to avoid .withOpacity
+                              color: const Color(0xFFFF0000).withAlpha(255),
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
                 Expanded(
                   child: isLoading
                       ? const Center(child: CircularProgressIndicator())
@@ -168,7 +174,7 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
                                   side: const BorderSide(color: Colors.blue, width: 1.1),
                                 ),
                                 elevation: 3,
-                                shadowColor: Colors.black.withOpacity(0.08),
+                                shadowColor: Colors.black.withAlpha(20), // updated from withOpacity(0.08)
                                 child: Padding(
                                   padding: const EdgeInsets.all(10.0),
                                   child: Column(
@@ -196,7 +202,6 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
                                           1: FlexColumnWidth(3),
                                         },
                                         children: [
-
                                           buildTableRow("Section", course["session_number"].toString()),
                                           buildTableRow("Time", course["session_time"] ?? ""),
                                           buildTableRow("Days", course["days"] ?? ""),

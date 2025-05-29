@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -13,11 +13,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   bool isLoading = false;
-  bool _isPasswordVisible = false;
-  bool _rememberMe = false;
+  bool isPasswordVisible = false;
+  bool rememberMe = false;
 
-  String selectedRole = 'student'; // Default selected role
-  final List<String> roles = ['student', 'instructor', 'admin'];
+  String selectedRole = 'student';
+  final roles = ['student', 'instructor', 'admin'];
 
   void _login() async {
     setState(() => isLoading = true);
@@ -27,6 +27,8 @@ class _LoginScreenState extends State<LoginScreen> {
       passwordController.text.trim(),
       selectedRole,
     );
+
+    if (!mounted) return;
 
     setState(() => isLoading = false);
 
@@ -43,6 +45,8 @@ class _LoginScreenState extends State<LoginScreen> {
         'userEmail': userEmail,
         'role': role,
       };
+
+      if (!mounted) return;
 
       if (role == 'admin') {
         Navigator.pushReplacementNamed(context, '/admin', arguments: arguments);
@@ -79,7 +83,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 'asset/logo.png',
                 width: 150,
                 height: 150,
-                fit: BoxFit.contain,
               ),
               const SizedBox(height: 30),
               DropdownButtonFormField<String>(
@@ -87,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: 'Select Role',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+                  contentPadding: const EdgeInsets.all(15),
                 ),
                 items: roles.map((role) {
                   return DropdownMenuItem<String>(
@@ -96,9 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 }).toList(),
                 onChanged: (value) {
-                  if (value != null) {
-                    setState(() => selectedRole = value);
-                  }
+                  if (value != null) setState(() => selectedRole = value);
                 },
               ),
               const SizedBox(height: 20),
@@ -107,29 +108,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.email),
                   hintText: "Email",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
               const SizedBox(height: 20),
               TextField(
                 controller: passwordController,
-                obscureText: !_isPasswordVisible,
+                obscureText: !isPasswordVisible,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
-                    icon: Icon(
-                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() => _isPasswordVisible = !_isPasswordVisible);
-                    },
+                    icon: Icon(isPasswordVisible ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () => setState(() => isPasswordVisible = !isPasswordVisible),
                   ),
                   hintText: "Password",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -139,18 +132,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     children: [
                       Checkbox(
-                        value: _rememberMe,
-                        onChanged: (value) {
-                          setState(() => _rememberMe = value!);
-                        },
+                        value: rememberMe,
+                        onChanged: (value) => setState(() => rememberMe = value!),
                       ),
                       const Text("Remember Me"),
                     ],
                   ),
                   TextButton(
-                    onPressed: () {
-                      // TODO: Add forgot password logic
-                    },
+                    onPressed: () {}, // TODO: Forgot password
                     child: const Text("Forgot Password?"),
                   ),
                 ],
@@ -160,20 +149,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: isLoading ? null : _login,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
                   padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 100),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                 ),
                 child: isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : Row(
+                    : const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Text(
-                      "Sign In",
-                      style: TextStyle(fontSize: 18, color: Colors.white),
-                    ),
+                  children: [
+                    Text("Sign In", style: TextStyle(fontSize: 18, color: Colors.white)),
                     SizedBox(width: 10),
                     Icon(Icons.arrow_forward, color: Colors.white),
                   ],

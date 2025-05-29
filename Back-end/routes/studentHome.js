@@ -3,8 +3,16 @@ import pool from '../db/index.js';
 const getStudentCourses = async (req, res) => {
   const { student_id } = req.query;
 
+  if (!student_id) {
+    return res.status(400).json({
+      success: false,
+      message: "student_id is required",
+    });
+  }
+
   try {
-    const result = await pool.query(
+    // First: Get the student's enrolled courses
+    const coursesResult = await pool.query(
       `SELECT
          c.course_name,
          c.session_number,
@@ -13,21 +21,14 @@ const getStudentCourses = async (req, res) => {
          c.session_location,
          c.credit_hours,
          e.student_id,
-         c.instructor_id,
-         i.name AS instructor_name,
          COALESCE(a.absents, 0) AS absents
        FROM "enrollment" e
        JOIN "course" c ON e.course_name = c.course_name AND e.session_number = c.session_number
-       JOIN "instructor" i ON c.instructor_id = i.instructor_id
        LEFT JOIN (
-           SELECT
-             student_id,
-             course_name,
-             session_number,
-             COUNT(*) AS absents
-           FROM "attendance"
-           WHERE status = 'absent'
-           GROUP BY student_id, course_name, session_number
+         SELECT student_id, course_name, session_number, COUNT(*) AS absents
+         FROM "attendance"
+         WHERE status = 'absent'
+         GROUP BY student_id, course_name, session_number
        ) a ON a.student_id = e.student_id
           AND a.course_name = e.course_name
           AND a.session_number = e.session_number
@@ -35,17 +36,36 @@ const getStudentCourses = async (req, res) => {
       [student_id]
     );
 
-    if (result.rows.length > 0) {
-      res.status(200).json({
-        success: true,
-        courses: result.rows,
-      });
-    } else {
-      res.status(404).json({
+    const courses = coursesResult.rows;
+
+    if (courses.length === 0) {
+      return res.status(404).json({
         success: false,
         message: 'No courses found for this student',
       });
     }
+
+    // Second: For each course, fetch instructor_id and name (from courseinstructor & instructor tables)
+    for (const course of courses) {
+      const instructorResult = await pool.query(
+        `SELECT ci.instructor_id, i.name AS instructor_name
+         FROM courseinstructor ci
+         JOIN instructor i ON ci.instructor_id = i.instructor_id
+         WHERE ci.course_name = $1 AND ci.session_number = $2
+         LIMIT 1`,
+        [course.course_name, course.session_number]
+      );
+
+      const instructor = instructorResult.rows[0];
+
+      course.instructor_id = instructor?.instructor_id || null;
+      course.instructor_name = instructor?.instructor_name || null;
+    }
+
+    res.status(200).json({
+      success: true,
+      courses: courses,
+    });
   } catch (err) {
     console.error('Get Student Courses Error:', err.message);
     res.status(500).json({ success: false, message: 'Server error' });
