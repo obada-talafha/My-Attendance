@@ -7,6 +7,8 @@ import 'student_drawer.dart';
 import 'absents_page.dart';
 import 'student_notifications_page.dart';
 import 'qr_scan_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class Course {
   final String courseName;
@@ -64,7 +66,8 @@ class _StudentHomePageState extends State<StudentHomePage> {
   }
 
   Future<void> loadCourses() async {
-    final studentId = '155349'; // Replace with actual logged-in student ID
+    final prefs = await SharedPreferences.getInstance();
+    final studentId = prefs.getString('userId');
     try {
       final url = Uri.parse('https://my-attendance-1.onrender.com/studentHome?student_id=$studentId');
       final response = await http.get(url);
