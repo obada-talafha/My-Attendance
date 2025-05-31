@@ -15,6 +15,9 @@ import { markAbsent } from './routes/markAbsences.js';
 import { deleteAttendance } from './routes/deleteAbsences.js';
 import { getStudentsInCourse } from './routes/viewAllStudentInCourse.js';
 
+import { createQRSession } from './routes/QR_session.js';
+import { verifyFace } from './routes/verifyFace.js';
+
 
 
 const app = express();
@@ -43,6 +46,10 @@ app.get('/instructorProfile', getInstructorProfile);
 app.get('/students-in-course', getStudentsInCourse);
 app.post('/mark-absent', markAbsent);
 app.delete('/delete-attendance', deleteAttendance);
+
+app.post('/qr_code', createQRSession);
+app.post('/verify-face', verifyFace);
+
 
 // Start server
 const PORT = 3000;  // Use 5000 to match the API's port

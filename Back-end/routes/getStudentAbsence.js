@@ -1,32 +1,37 @@
-import pool from '../db/index.js'; // Assuming you have the pool setup for database connection
+import pool from '../db/index.js';
 
-// Get student absences
+//changed 31/5/2025
+
+
 const getStudentAbsences = async (req, res) => {
   const { student_id } = req.query;
 
-  // Check if student_id is provided
   if (!student_id) {
-    return res.status(400).json({ success: false, message: 'Student ID is required' });
+    return res.status(400).json({
+      success: false,
+      message: 'Student ID is required',
+    });
   }
 
   try {
-    // Fetch absences for the student (only where status is 'absent')
     const result = await pool.query(
-      `SELECT course_name, session_number, attendance_date
-       FROM attendance
-       WHERE student_id = $1 AND status = 'absent'
-       ORDER BY attendance_date DESC`,
+      `SELECT 
+         q.course_name, 
+         q.session_number, 
+         q.session_date
+       FROM attendance a
+       JOIN QR q ON a.session_id = q.session_id
+       WHERE a.student_id = $1 AND a.is_present = FALSE
+       ORDER BY q.session_date ASC`,
       [student_id]
     );
 
     if (result.rows.length > 0) {
-      // If absences found, return them
       res.status(200).json({
         success: true,
         absences: result.rows,
       });
     } else {
-      // If no absences found, return a success message
       res.status(200).json({
         success: true,
         message: 'No absences found for this student',
@@ -34,7 +39,10 @@ const getStudentAbsences = async (req, res) => {
     }
   } catch (err) {
     console.error('Get Student Absences Error:', err.message);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+    });
   }
 };
 

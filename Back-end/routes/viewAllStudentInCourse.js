@@ -40,4 +40,4 @@ const getStudentsInCourse = async (req, res) => {
   }
 };
 
-export { getStudentsInCourse };
+export  { getStudentsInCourse };

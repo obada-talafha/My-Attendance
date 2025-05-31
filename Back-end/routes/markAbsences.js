@@ -2,21 +2,21 @@ import pool from '../db/index.js'; // Assuming you have the pool setup for datab
 
 // Mark student as absent (insert record)
 const markAbsent = async (req, res) => {
-  const { student_id, course_name, session_number, attendance_date } = req.body;
+  const { student_id, session_id } = req.body;
 
   // Check if required fields are provided
-  if (!student_id || !course_name || !session_number) {
+  if (!student_id || !session_id) {
     return res.status(400).json({ success: false, message: "Missing required fields" });
   }
 
   try {
-    // Insert attendance with default status 'absent'
+    // Insert attendance with default is_present = false (absent)
     const result = await pool.query(
-      `INSERT INTO attendance (student_id, course_name, session_number, attendance_date)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (student_id, course_name, session_number, attendance_date)
-       DO UPDATE SET status = 'absent'`,
-      [student_id, course_name, session_number, attendance_date || new Date()]
+      `INSERT INTO attendance (student_id, session_id, is_present)
+       VALUES ($1, $2, false)
+       ON CONFLICT (student_id, session_id)
+       DO UPDATE SET is_present = false, verified_face = false`,
+      [student_id, session_id]
     );
 
     res.status(200).json({
