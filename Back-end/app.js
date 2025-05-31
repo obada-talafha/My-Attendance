@@ -6,7 +6,7 @@ import bodyParser from 'body-parser';
 import { loginStudent, loginAdmin, loginInstructor } from './routes/auth.js';
 import { getStudentProfile } from './routes/studentController.js';
 import { getStudentCourses } from './routes/studentHome.js'; //changed
-import { getInstructorCourses } from './routes/instructorHome.js'; //changed
+import { getInstructorHome } from './routes/instructorHome.js';
 import { getInstructorProfile } from './routes/instructorProfile.js';
 
 //new
@@ -41,7 +41,7 @@ app.get('/studentProfile', getStudentProfile);
 app.get('/student-absences', getStudentAbsences);
 
 // Instructor routes
-app.get('/instructorHome', getInstructorCourses);  // Make sure this route is correct
+app.get('/instructorHome', getInstructorHome);
 app.get('/instructorProfile', getInstructorProfile);
 app.get('/students-in-course', getStudentsInCourse);
 app.post('/mark-absent', markAbsent);
