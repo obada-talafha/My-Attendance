@@ -1,6 +1,8 @@
 import pool from '../db/index.js';
 
-// Get all students enrolled in a specific course session
+//Updated 1/6/2025
+
+// Get all students in a specific course session with absence count
 const getStudentsInCourse = async (req, res) => {
   const { course_name, session_number } = req.query;
 
@@ -16,9 +18,21 @@ const getStudentsInCourse = async (req, res) => {
       `SELECT
          s.student_id,
          s.name AS student_name,
-         s.email
-       FROM "enrollment" e
-       JOIN "student" s ON e.student_id = s.student_id
+         s.email,
+         COALESCE(a.absents, 0) AS absents
+       FROM enrollment e
+       JOIN student s ON e.student_id = s.student_id
+       LEFT JOIN (
+         SELECT
+           a.student_id,
+           COUNT(*) AS absents
+         FROM attendance a
+         JOIN qr_session qs ON a.session_id = qs.session_id
+         WHERE a.is_present = FALSE
+           AND qs.course_name = $1
+           AND qs.session_number = $2
+         GROUP BY a.student_id
+       ) a ON a.student_id = s.student_id
        WHERE e.course_name = $1 AND e.session_number = $2`,
       [course_name, session_number]
     );
@@ -40,4 +54,4 @@ const getStudentsInCourse = async (req, res) => {
   }
 };
 
-export  { getStudentsInCourse };
+export { getStudentsInCourse };
