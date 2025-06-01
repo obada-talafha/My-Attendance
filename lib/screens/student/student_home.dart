@@ -68,24 +68,48 @@ class _StudentHomePageState extends State<StudentHomePage> {
   Future<void> loadCourses() async {
     final prefs = await SharedPreferences.getInstance();
     final studentId = prefs.getString('userId');
+
+    if (studentId == null) {
+      setState(() => isLoading = false);
+      return;
+    }
+
     try {
       final url = Uri.parse('https://my-attendance-1.onrender.com/studentHome?student_id=$studentId');
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
-        final List data = jsonData['courses'];
-        final List<Course> loadedCourses = data.map((c) => Course.fromJson(c)).toList();
-        setState(() {
-          courses = loadedCourses;
-          isLoading = false;
-        });
+
+        // Check if API response is successful
+        if (jsonData['success'] == true) {
+          final List data = jsonData['courses'];
+
+          final List<Course> loadedCourses = data.map((c) => Course.fromJson({
+            'course_name': c['course_name'],
+            'session_number': c['session_number'],
+            'student_id': studentId,
+            'days': c['days'],
+            'session_time': c['session_time'],
+            'session_location': c['session_location'],
+            'credit_hours': c['credit_hours'],
+            'instructor_name': c['instructor_name'] ?? 'N/A',
+            'absents': c['absents'] ?? '0',
+          })).toList();
+
+          setState(() {
+            courses = loadedCourses;
+            isLoading = false;
+          });
+        } else {
+          throw Exception(jsonData['message'] ?? 'Failed to load courses');
+        }
       } else {
-        throw Exception('Failed to load courses');
+        throw Exception('Failed to load courses. Status: ${response.statusCode}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print("Error: $e");
+        print("Error loading courses: $e");
       }
       setState(() => isLoading = false);
     }

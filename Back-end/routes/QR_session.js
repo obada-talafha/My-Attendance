@@ -1,10 +1,6 @@
 import pool from '../db/index.js';
 import crypto from 'crypto';
 
-//new
-
-
-
 const createQRSession = async (req, res) => {
   const { course_name, session_number } = req.body;
 
