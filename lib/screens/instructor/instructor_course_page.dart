@@ -124,7 +124,7 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                         builder: (context) => TakeAttendanceMethodPage(
                           courseId: widget.courseId,
                           courseTitle: widget.courseTitle,
-                          selectedDate: selectedDate,
+
                           sessionNumber: widget.sessionNumber,                        ),
                       ),
                     );
