@@ -45,7 +45,20 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ error: 'Student not enrolled in this course/session' });
     }
 
-    // Step 3: Mark attendance (INSERT or UPDATE)
+    // Step 3: Check if student has already marked attendance today
+    const alreadyMarkedResult = await pool.query(
+      `SELECT 1 FROM attendance
+       WHERE session_id = $1
+         AND student_id = $2
+         AND DATE(marked_at) = CURRENT_DATE`,
+      [session_id, student_id]
+    );
+
+    if (alreadyMarkedResult.rows.length > 0) {
+      return res.status(409).json({ error: 'Attendance already marked for today' });
+    }
+
+    // Step 4: Mark attendance
     await pool.query(
       `INSERT INTO attendance (session_id, student_id, is_present, verified_face, marked_at)
        VALUES ($1, $2, TRUE, FALSE, NOW())
