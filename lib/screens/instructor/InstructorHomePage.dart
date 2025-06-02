@@ -35,7 +35,9 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
 
     try {
       final response = await http.get(
-        Uri.parse('https://my-attendance-1.onrender.com/instructorHome?instructor_id=$instructorId'),
+        Uri.parse(
+          'https://my-attendance-1.onrender.com/instructorHome?instructor_id=$instructorId',
+        ),
       );
 
       // Use debugPrint instead of print for debugging
@@ -70,7 +72,10 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
           child: Center(
             child: Text(
               label,
-              style: GoogleFonts.jost(fontSize: 14, fontWeight: FontWeight.w600),
+              style: GoogleFonts.jost(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -79,7 +84,10 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
           child: Center(
             child: Text(
               value,
-              style: GoogleFonts.jost(fontSize: 14, fontWeight: FontWeight.w600),
+              style: GoogleFonts.jost(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
@@ -93,24 +101,22 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F9FF),
-      appBar: isSmallScreen
-          ? AppBar(
-        title: Text('Instructor Home', style: GoogleFonts.jost()),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      )
-          : null,
+      appBar:
+          isSmallScreen
+              ? AppBar(
+                title: Text('Instructor Home', style: GoogleFonts.jost()),
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                elevation: 0,
+              )
+              : null,
       drawer: isSmallScreen ? const Instructordrawer() : null,
       body: Row(
         children: [
           if (!isSmallScreen)
             const SizedBox(
               width: 200,
-              child: ColoredBox(
-                color: Colors.white,
-                child: Instructordrawer(),
-              ),
+              child: ColoredBox(color: Colors.white, child: Instructordrawer()),
             ),
           Expanded(
             child: Column(
@@ -123,7 +129,10 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
                     child: Stack(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.notifications_none, color: Colors.black87),
+                          icon: const Icon(
+                            Icons.notifications_none,
+                            color: Colors.black87,
+                          ),
                           onPressed: () {},
                         ),
                         Positioned(
@@ -143,111 +152,169 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
                     ),
                   ),
                 Expanded(
-                  child: isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : courses.isEmpty
-                      ? const Center(child: Text("No courses found."))
-                      : SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12.0),
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          int crossAxisCount = 1;
-                          if (constraints.maxWidth > 1200) {
-                            crossAxisCount = 3;
-                          } else if (constraints.maxWidth > 800) {
-                            crossAxisCount = 2;
-                          }
+                  child:
+                      isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : courses.isEmpty
+                          ? const Center(child: Text("No courses found."))
+                          : SingleChildScrollView(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  int crossAxisCount = 1;
+                                  if (constraints.maxWidth > 1200) {
+                                    crossAxisCount = 3;
+                                  } else if (constraints.maxWidth > 800) {
+                                    crossAxisCount = 2;
+                                  }
 
-                          return GridView.count(
-                            crossAxisCount: crossAxisCount,
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                            childAspectRatio: 2.2,
-                            children: courses.map((course) {
-                              return Card(
-                                color: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: const BorderSide(color: Colors.blue, width: 1.1),
-                                ),
-                                elevation: 3,
-                                shadowColor: Colors.black.withAlpha(20), // updated from withOpacity(0.08)
-                                child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      Center(
-                                        child: Text(
-                                          course["course_name"] ?? "",
-                                          textAlign: TextAlign.center,
-                                          style: GoogleFonts.jost(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      const Divider(thickness: 1, color: Color(0xFFE0E0E0)),
-                                      const SizedBox(height: 4),
-                                      Table(
-                                        border: TableBorder.symmetric(
-                                          inside: const BorderSide(color: Color(0xFFE0E0E0), width: 0.6),
-                                        ),
-                                        columnWidths: const {
-                                          0: FlexColumnWidth(2),
-                                          1: FlexColumnWidth(3),
-                                        },
-                                        children: [
-                                          buildTableRow("Section", course["session_number"].toString()),
-                                          buildTableRow("Time", course["session_time"] ?? ""),
-                                          buildTableRow("Days", course["days"] ?? ""),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Center(
-                                        child: ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (_) => InstructorCoursePage(
-                                                  courseTitle: course["course_name"] ?? "",
-                                                  courseId: course["course_code"] ?? "",
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(0xFF0961F5),
-                                            foregroundColor: Colors.white,
-                                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                  return GridView.count(
+                                    crossAxisCount: crossAxisCount,
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 2.2,
+                                    children:
+                                        courses.map((course) {
+                                          return Card(
+                                            color: Colors.white,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.circular(24),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              side: const BorderSide(
+                                                color: Colors.blue,
+                                                width: 1.1,
+                                              ),
                                             ),
-                                          ),
-                                          child: Text(
-                                            "View Course",
-                                            style: GoogleFonts.jost(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 14,
+                                            elevation: 3,
+                                            shadowColor: Colors.black.withAlpha(
+                                              20,
+                                            ), // updated from withOpacity(0.08)
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(
+                                                10.0,
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.stretch,
+                                                children: [
+                                                  Center(
+                                                    child: Text(
+                                                      course["course_name"] ??
+                                                          "",
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: GoogleFonts.jost(
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  const Divider(
+                                                    thickness: 1,
+                                                    color: Color(0xFFE0E0E0),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  Table(
+                                                    border:
+                                                        TableBorder.symmetric(
+                                                          inside:
+                                                              const BorderSide(
+                                                                color: Color(
+                                                                  0xFFE0E0E0,
+                                                                ),
+                                                                width: 0.6,
+                                                              ),
+                                                        ),
+                                                    columnWidths: const {
+                                                      0: FlexColumnWidth(2),
+                                                      1: FlexColumnWidth(3),
+                                                    },
+                                                    children: [
+                                                      buildTableRow(
+                                                        "Section",
+                                                        course["session_number"]
+                                                            .toString(),
+                                                      ),
+                                                      buildTableRow(
+                                                        "Time",
+                                                        course["session_time"] ??
+                                                            "",
+                                                      ),
+                                                      buildTableRow(
+                                                        "Days",
+                                                        course["days"] ?? "",
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Center(
+                                                    child: ElevatedButton(
+                                                      onPressed: () {
+                                                        Navigator.push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder:
+                                                                (
+                                                                  _,
+                                                                ) => InstructorCoursePage(
+                                                                  courseTitle:
+                                                                      course["course_name"] ??
+                                                                      "",
+                                                                  courseId:
+                                                                      course["course_code"] ??
+                                                                      "",
+                                                                  sessionNumber: int.tryParse(course["session_number"].toString()) ?? 0,
+
+                                                                ),
+                                                          ),
+                                                        );
+                                                        ;
+                                                      },
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            const Color(
+                                                              0xFF0961F5,
+                                                            ),
+                                                        foregroundColor:
+                                                            Colors.white,
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              horizontal: 20,
+                                                              vertical: 10,
+                                                            ),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                24,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        "View Course",
+                                                        style: GoogleFonts.jost(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          fontSize: 14,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
+                                          );
+                                        }).toList(),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
                 ),
               ],
             ),

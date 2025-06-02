@@ -17,7 +17,7 @@ import { getStudentsInCourse } from './routes/viewAllStudentInCourse.js';
 
 import { createQRSession } from './routes/QR_session.js';
 import { verifyFace } from './routes/verifyFace.js';
-
+import studentQrAttendanceRouter from './routes/studentQrAttendance.js';
 
 
 const app = express();
@@ -29,6 +29,7 @@ app.use(cors({
 
 // Middleware to parse JSON requests
 app.use(express.json());
+app.use('/mark-attendance', studentQrAttendanceRouter);
 
 // Routes
 app.post('/loginStudent', loginStudent);

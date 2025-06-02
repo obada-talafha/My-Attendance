@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'QrAttendancePage.dart';
-import 'ManualAttendancePage.dart';
+
+import 'QrAttendancePage.dart';  // Make sure the relative path is correct
+import 'ManualAttendancePage.dart'; // Make sure this path is correct
 
 class TakeAttendanceMethodPage extends StatelessWidget {
   final DateTime selectedDate;
   final String courseTitle;
   final String courseId;
-
+  final int sessionNumber;
   const TakeAttendanceMethodPage({
     Key? key,
     required this.selectedDate,
     required this.courseTitle,
     required this.courseId,
+    required this.sessionNumber,
   }) : super(key: key);
 
   @override
@@ -62,6 +64,7 @@ class TakeAttendanceMethodPage extends StatelessWidget {
                             courseId: courseId,
                             courseTitle: courseTitle,
                             selectedDate: selectedDate,
+                            sessionNumber: sessionNumber,
                           ),
                         ),
                       );
@@ -81,6 +84,7 @@ class TakeAttendanceMethodPage extends StatelessWidget {
                             courseId: courseId,
                             courseTitle: courseTitle,
                             selectedDate: selectedDate,
+                            sessionNumber: sessionNumber,
                           ),
                         ),
                       );

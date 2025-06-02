@@ -12,20 +12,18 @@ const createQRSession = async (req, res) => {
     const session_date = new Date();
     const qr_token = crypto.randomBytes(16).toString('hex');
 
-    // Insert the QR session
     const result = await pool.query(
       `INSERT INTO qr_session (course_name, session_number, session_date, qr_token)
        VALUES ($1, $2, $3, $4)
-       RETURNING session_id, qr_token`,
+       RETURNING *`,
       [course_name, session_number, session_date, qr_token]
     );
 
-    const { session_id } = result.rows[0];
+    const session = result.rows[0];
 
     res.status(201).json({
       success: true,
-      session_id,
-      qr_token,
+      session,
     });
   } catch (err) {
     console.error('Create QR Session Error:', err.message);

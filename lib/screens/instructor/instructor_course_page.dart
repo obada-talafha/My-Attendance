@@ -7,11 +7,13 @@ import 'ViewAttendanceRecordPage.dart';
 class InstructorCoursePage extends StatefulWidget {
   final String courseTitle;
   final String courseId;
+  final int sessionNumber;
 
   const InstructorCoursePage({
-    super.key, // ✅ Use of super parameter
+    super.key,
     required this.courseTitle,
     required this.courseId,
+    required this.sessionNumber,
   });
 
   @override
@@ -25,7 +27,7 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
-      firstDate: DateTime(2024),
+      firstDate: DateTime.now(), // Prevent past dates
       lastDate: DateTime(2026),
     );
 
@@ -40,6 +42,7 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
   Widget build(BuildContext context) {
     final bool isSmallScreen = MediaQuery.of(context).size.width < 600;
     final String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
+    final bool isToday = DateUtils.isSameDay(selectedDate, DateTime.now());
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1F8FB),
@@ -76,8 +79,9 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                GestureDetector(
+                InkWell(
                   onTap: () => _pickDate(context),
+                  borderRadius: BorderRadius.circular(14),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       vertical: 14,
@@ -88,7 +92,7 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         const BoxShadow(
-                          color: Color.fromRGBO(128, 128, 128, 0.15), // ✅ replaced withOpacity
+                          color: Color.fromRGBO(128, 128, 128, 0.15),
                           blurRadius: 8,
                           offset: Offset(0, 4),
                         ),
@@ -98,9 +102,13 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                       children: [
                         const Icon(Icons.calendar_today, color: Colors.black54),
                         const SizedBox(width: 10),
-                        Text(
-                          formattedDate,
-                          style: GoogleFonts.jost(fontSize: 16),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            isToday ? "$formattedDate (Today)" : formattedDate,
+                            key: ValueKey(formattedDate),
+                            style: GoogleFonts.jost(fontSize: 16),
+                          ),
                         ),
                       ],
                     ),
@@ -117,7 +125,7 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                           courseId: widget.courseId,
                           courseTitle: widget.courseTitle,
                           selectedDate: selectedDate,
-                        ),
+                          sessionNumber: widget.sessionNumber,                        ),
                       ),
                     );
                   },
@@ -152,8 +160,9 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
   }) {
     final bool isSmallScreen = MediaQuery.of(context).size.width < 600;
 
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         width: double.infinity,
         padding: EdgeInsets.symmetric(
@@ -165,7 +174,7 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             const BoxShadow(
-              color: Color.fromRGBO(128, 128, 128, 0.12), // ✅ replaced withOpacity
+              color: Color.fromRGBO(128, 128, 128, 0.12),
               blurRadius: 10,
               offset: Offset(0, 4),
             ),

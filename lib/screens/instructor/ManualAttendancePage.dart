@@ -6,12 +6,13 @@ class ManualAttendancePage extends StatefulWidget {
   final DateTime selectedDate;
   final String courseTitle;
   final String courseId;
-
+  final int sessionNumber;
   const ManualAttendancePage({
     Key? key,
     required this.selectedDate,
     required this.courseTitle,
     required this.courseId,
+    required this.sessionNumber,
   }) : super(key: key);
 
   @override
