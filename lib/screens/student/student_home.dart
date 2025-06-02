@@ -211,15 +211,20 @@ class _StudentHomePageState extends State<StudentHomePage> {
           width: double.infinity,
           height: 60,
           child: TextButton(
-            onPressed: () async {
-              final scannedCode = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const QRScanPage()),
-              );
-              if (scannedCode != null && kDebugMode) {
-                print("Scanned QR Code: $scannedCode");
-              }
-            },
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                final studentId = prefs.getString('userId');
+
+                if (studentId == null) return;
+
+                final scannedCode = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => QRScanPage(studentId: studentId),
+                  ),
+                );
+              },
+
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),

@@ -1,19 +1,26 @@
 import express from 'express';
-import pool from '../db/index.js'; // Assuming you use a pool from your db/index.js
+import pool from '../db/index.js'; // Your MySQL connection pool
 
 const router = express.Router();
 
 router.post('/', async (req, res) => {
   const { student_id, qr_data } = req.body;
 
-  if (!student_id || !qr_data || !qr_data.session_id || !qr_data.qr_token) {
-    return res.status(400).json({ error: 'Missing required data' });
+  // Validate request body
+  if (
+    !student_id ||
+    !qr_data ||
+    typeof qr_data !== 'object' ||
+    !qr_data.session_id ||
+    !qr_data.qr_token
+  ) {
+    return res.status(400).json({ error: 'Missing or invalid required data' });
   }
 
   try {
     const { session_id, qr_token } = qr_data;
 
-    // 1. Verify session and QR token
+    // 1. Verify the session exists and QR token matches
     const [sessionRows] = await pool.query(
       'SELECT course_name, session_number, qr_token FROM qr_session WHERE session_id = ?',
       [session_id]
@@ -24,14 +31,14 @@ router.post('/', async (req, res) => {
     }
 
     const session = sessionRows[0];
-
     if (session.qr_token !== qr_token) {
       return res.status(401).json({ error: 'Invalid QR token' });
     }
 
-    // 2. Verify enrollment
+    // 2. Verify the student is enrolled in this course/session
     const [enrollRows] = await pool.query(
-      'SELECT * FROM enrollment WHERE student_id = ? AND course_name = ? AND session_number = ?',
+      `SELECT 1 FROM enrollment
+       WHERE student_id = ? AND course_name = ? AND session_number = ?`,
       [student_id, session.course_name, session.session_number]
     );
 
@@ -42,8 +49,8 @@ router.post('/', async (req, res) => {
     // 3. Mark attendance (insert or update)
     await pool.query(
       `INSERT INTO attendance (session_id, student_id, is_present, verified_face, marked_at)
-       VALUES (?, ?, true, false, NOW())
-       ON DUPLICATE KEY UPDATE is_present = true, marked_at = NOW()`,
+       VALUES (?, ?, TRUE, FALSE, NOW())
+       ON DUPLICATE KEY UPDATE is_present = TRUE, marked_at = NOW()`,
       [session_id, student_id]
     );
 

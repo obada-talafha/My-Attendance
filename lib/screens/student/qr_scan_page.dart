@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 class QRScanPage extends StatefulWidget {
-  const QRScanPage({Key? key}) : super(key: key);
+  final String studentId;
+
+  const QRScanPage({Key? key, required this.studentId}) : super(key: key);
 
   @override
   State<QRScanPage> createState() => _QRScanPageState();
@@ -26,48 +27,58 @@ class _QRScanPageState extends State<QRScanPage> {
   }
 
   void _onDetect(BarcodeCapture capture) async {
-    if (isProcessing) return; // Prevent multiple scans
+    if (isProcessing) return;
     final List<Barcode> barcodes = capture.barcodes;
 
     if (barcodes.isNotEmpty) {
       final String? rawCode = barcodes.first.rawValue;
+      print('Scanned raw QR code: $rawCode');
+      print('Student ID: ${widget.studentId}');
+
       if (rawCode != null) {
         setState(() => isProcessing = true);
         controller.stop();
 
         try {
-          final qrData = jsonDecode(rawCode); // Must be JSON string
+          final Map<String, dynamic> qrData = jsonDecode(rawCode);
 
-          final prefs = await SharedPreferences.getInstance();
-          final studentId = prefs.getString('student_id');
-
-          if (studentId == null) {
-            _showMessage('Student ID not found.');
-            Navigator.pop(context);
-            return;
+          // Validate QR data contains expected fields
+          if (!qrData.containsKey('session_id') || !qrData.containsKey('qr_token')) {
+            throw FormatException('Invalid QR data format');
           }
 
           final response = await http.post(
             Uri.parse('https://my-attendance-1.onrender.com/mark-attendance'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({
-              'student_id': studentId,
+              'student_id': widget.studentId,
               'qr_data': qrData,
             }),
           );
 
-          final result = jsonDecode(response.body);
+          print('Status code: ${response.statusCode}');
+          print('Response body: ${response.body}');
 
           if (response.statusCode == 200) {
+            final result = jsonDecode(response.body);
             _showMessage(result['message'] ?? 'Attendance marked!');
           } else {
-            _showMessage(result['error'] ?? 'Failed to mark attendance');
+            try {
+              final errorResult = jsonDecode(response.body);
+              _showMessage(errorResult['error'] ?? 'Failed to mark attendance');
+            } catch (_) {
+              _showMessage('Failed to mark attendance with unexpected error');
+            }
           }
         } catch (e) {
-          _showMessage('Invalid QR or server error');
+          print('Error processing QR or server response: $e');
+          _showMessage('Invalid QR code or server error');
         }
 
-        Navigator.pop(context);
+        // Pop back after short delay to allow user to see snackbar
+        Future.delayed(const Duration(seconds: 1), () {
+          if (mounted) Navigator.pop(context);
+        });
       }
     }
   }
@@ -76,6 +87,12 @@ class _QRScanPageState extends State<QRScanPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
     );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 
   @override
