@@ -83,10 +83,12 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
 
-        if (data.containsKey('qr_token') && data.containsKey('session_id')) {
+        if (data.containsKey('session') &&
+            data['session'].containsKey('qr_token') &&
+            data['session'].containsKey('session_id')) {
           final newQrData = jsonEncode({
-            'session_id': data['session_id'],
-            'qr_token': data['qr_token'],
+            'session_id': data['session']['session_id'],
+            'qr_token': data['session']['qr_token'],
           });
 
           if (newQrData != qrData) {

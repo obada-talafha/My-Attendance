@@ -1,12 +1,11 @@
 import express from 'express';
-import pool from '../db/index.js'; // Your MySQL connection pool
+import pool from '../db/index.js';
 
 const router = express.Router();
 
 router.post('/', async (req, res) => {
   const { student_id, qr_data } = req.body;
 
-  // Validate request body
   if (
     !student_id ||
     !qr_data ||
@@ -20,45 +19,45 @@ router.post('/', async (req, res) => {
   try {
     const { session_id, qr_token } = qr_data;
 
-    // 1. Verify the session exists and QR token matches
-    const [sessionRows] = await pool.query(
-      'SELECT course_name, session_number, qr_token FROM qr_session WHERE session_id = ?',
+    // Step 1: Verify QR session
+    const sessionResult = await pool.query(
+      `SELECT course_name, session_number, qr_token FROM qr_session WHERE session_id = $1`,
       [session_id]
     );
 
-    if (sessionRows.length === 0) {
+    if (sessionResult.rows.length === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    const session = sessionRows[0];
+    const session = sessionResult.rows[0];
+
     if (session.qr_token !== qr_token) {
       return res.status(401).json({ error: 'Invalid QR token' });
     }
 
-    // 2. Verify the student is enrolled in this course/session
-    const [enrollRows] = await pool.query(
-      `SELECT 1 FROM enrollment
-       WHERE student_id = ? AND course_name = ? AND session_number = ?`,
+    // Step 2: Check student enrollment
+    const enrollResult = await pool.query(
+      `SELECT 1 FROM enrollment WHERE student_id = $1 AND course_name = $2 AND session_number = $3`,
       [student_id, session.course_name, session.session_number]
     );
 
-    if (enrollRows.length === 0) {
+    if (enrollResult.rows.length === 0) {
       return res.status(403).json({ error: 'Student not enrolled in this course/session' });
     }
 
-    // 3. Mark attendance (insert or update)
+    // Step 3: Mark attendance (INSERT or UPDATE)
     await pool.query(
       `INSERT INTO attendance (session_id, student_id, is_present, verified_face, marked_at)
-       VALUES (?, ?, TRUE, FALSE, NOW())
-       ON DUPLICATE KEY UPDATE is_present = TRUE, marked_at = NOW()`,
+       VALUES ($1, $2, TRUE, FALSE, NOW())
+       ON CONFLICT (session_id, student_id)
+       DO UPDATE SET is_present = TRUE, verified_face = FALSE, marked_at = NOW()`,
       [session_id, student_id]
     );
 
-    return res.json({ message: 'Attendance marked successfully' });
-
+    return res.status(200).json({ message: 'Attendance marked successfully' });
   } catch (error) {
-    console.error('Error marking attendance:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Error marking attendance:', error.message);
+    return res.status(500).json({ error: 'Internal server error', detail: error.message });
   }
 });
 
