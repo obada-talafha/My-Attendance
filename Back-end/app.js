@@ -18,7 +18,7 @@ import { getStudentsInCourse } from './routes/viewAllStudentInCourse.js';
 import { createQRSession } from './routes/QR_session.js';
 import { verifyFace } from './routes/verifyFace.js';
 import studentQrAttendanceRouter from './routes/studentQrAttendance.js';
-
+import endSessionRouter from './routes/endSession.js';
 
 const app = express();
 
@@ -47,7 +47,7 @@ app.get('/instructorProfile', getInstructorProfile);
 app.get('/students-in-course', getStudentsInCourse);
 app.post('/mark-absent', markAbsent);
 app.delete('/delete-attendance', deleteAttendance);
-
+app.use(endSessionRouter);
 app.post('/qr_code', createQRSession);
 app.post('/verify-face', verifyFace);
 

@@ -16,7 +16,6 @@ class QrAttendancePage extends StatefulWidget {
     required this.courseTitle,
     required this.selectedDate,
     required this.sessionNumber,
-
   }) : super(key: key);
 
   @override
@@ -27,7 +26,7 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
   String? qrData;
   Timer? _timer;
   Timer? _countdownTimer;
-  int countdown = 6; // Start from 5 seconds
+  int countdown = 6;
 
   @override
   void initState() {
@@ -39,7 +38,6 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
 
   void _startQrTimer() {
     _timer = Timer.periodic(const Duration(seconds: 6), (_) {
-      print('Refreshing QR...');
       _generateQRCode();
       setState(() {
         countdown = 6;
@@ -77,40 +75,37 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
         }),
       );
 
-      print('Status Code: ${response.statusCode}');
-      print('Raw Response: ${response.body}');
-
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
 
         if (data.containsKey('session') &&
             data['session'].containsKey('qr_token') &&
             data['session'].containsKey('session_id')) {
-          final newQrData = jsonEncode({
+          final encodedQr = base64Encode(utf8.encode(jsonEncode({
             'session_id': data['session']['session_id'],
             'qr_token': data['session']['qr_token'],
-          });
+          })));
 
-          if (newQrData != qrData) {
+          if (encodedQr != qrData) {
             setState(() {
-              qrData = newQrData;
+              qrData = encodedQr;
             });
           }
         } else {
           _showSnackBar('Missing QR code data from server');
         }
       } else {
-        print('Failed to generate QR: ${response.body}');
         _showSnackBar('Failed to generate QR code');
       }
     } catch (e) {
-      print('Error generating QR code: $e');
       _showSnackBar('Error generating QR code');
     }
   }
 
   Future<void> _endSession() async {
-    final url = Uri.parse('https://my-attendance-1.onrender.com/api/end_session');
+    final url = Uri.parse('https://my-attendance-1.onrender.com/end-session');
+
+    print('Ending session for course: ${widget.courseTitle}, session: ${widget.sessionNumber}');
 
     try {
       final response = await http.post(
@@ -122,12 +117,12 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
         }),
       );
 
-      print('End session response: ${response.body}');
-
       if (response.statusCode == 200) {
+        print('Session ended successfully');
         Navigator.pop(context);
       } else {
-        print('Failed to end session');
+        print('End session failed: ${response.statusCode}');
+        print('Response body: ${response.body}');
         _showSnackBar('Failed to end session');
       }
     } catch (e) {
@@ -144,56 +139,74 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
     }
   }
 
+  void _confirmEndSession() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('End Session'),
+        content: const Text('Are you sure you want to end this session?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _endSession();
+            },
+            child: const Text('End'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: const Text('QR Attendance'),
         actions: [
           IconButton(
             icon: const Icon(Icons.close),
             tooltip: 'End Session',
-            onPressed: _endSession,
+            onPressed: _confirmEndSession,
           ),
         ],
       ),
-        body: SafeArea(
-          child: qrData == null
-              ? const Center(child: CircularProgressIndicator())
-              : LayoutBuilder(
-            builder: (context, constraints) {
-              // Calculate max QR size based on available height:
-              // Reserve 100 for countdown text + padding, etc.
-              final maxQrSize = constraints.maxHeight - 100;
-              // Also limit QR size to 85% of width
-              final qrSize = maxQrSize < constraints.maxWidth * 0.85
-                  ? maxQrSize
-                  : constraints.maxWidth * 0.85;
+      body: SafeArea(
+        child: qrData == null
+            ? const Center(child: CircularProgressIndicator())
+            : LayoutBuilder(
+          builder: (context, constraints) {
+            final maxQrSize = constraints.maxHeight - 100;
+            final qrSize = maxQrSize < constraints.maxWidth * 0.85
+                ? maxQrSize
+                : constraints.maxWidth * 0.85;
 
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Next QR refresh in: $countdown s',
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 20),
-                    QrImageView(
-                      key: ValueKey(qrData),
-                      data: qrData!,
-                      version: QrVersions.auto,
-                      size: qrSize,
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              );
-            },
-          ),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'Next QR refresh in: $countdown s',
+                    style: const TextStyle(
+                        fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  QrImageView(
+                    key: ValueKey(qrData),
+                    data: qrData!,
+                    version: QrVersions.auto,
+                    size: qrSize,
+                  ),
+                ],
+              ),
+            );
+          },
         ),
-
-
+      ),
     );
   }
 }

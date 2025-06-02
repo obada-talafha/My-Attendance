@@ -16,8 +16,6 @@ class _QRScanPageState extends State<QRScanPage> {
   late MobileScannerController controller;
   double zoomLevel = 0.0;
   bool isProcessing = false;
-  bool canScan = false; // Control scanning start after delay
-  String scannedCode = ''; // To show scanned QR code value on screen
 
   @override
   void initState() {
@@ -26,19 +24,10 @@ class _QRScanPageState extends State<QRScanPage> {
       detectionSpeed: DetectionSpeed.noDuplicates,
       facing: CameraFacing.back,
     );
-
-    // Wait 2 seconds before enabling scanning
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          canScan = true;
-        });
-      }
-    });
   }
 
   void _onDetect(BarcodeCapture capture) async {
-    if (!canScan || isProcessing) return;
+    if (isProcessing) return;
 
     final List<Barcode> barcodes = capture.barcodes;
 
@@ -47,11 +36,9 @@ class _QRScanPageState extends State<QRScanPage> {
 
       if (rawCode != null) {
         setState(() {
-          scannedCode = rawCode;  // Update UI with scanned QR code
           isProcessing = true;
         });
 
-        // Stop scanning shortly after detection
         await Future.delayed(const Duration(milliseconds: 500));
         await controller.stop();
 
@@ -138,8 +125,6 @@ class _QRScanPageState extends State<QRScanPage> {
           MobileScanner(
             controller: controller,
             onDetect: _onDetect,
-            // Only scan if canScan is true
-            // We rely on onDetect ignoring events if canScan is false
           ),
 
           // Center overlay box for aiming
@@ -151,27 +136,6 @@ class _QRScanPageState extends State<QRScanPage> {
                 border: Border.all(color: Colors.white70, width: 2),
                 borderRadius: BorderRadius.circular(12),
                 color: Colors.white.withOpacity(0.1),
-              ),
-            ),
-          ),
-
-          // Show scanned code text on top center
-          Positioned(
-            top: 80,
-            left: 16,
-            right: 16,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  scannedCode.isEmpty ? 'Waiting for scan...' : 'Scanned: $scannedCode',
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
               ),
             ),
           ),
