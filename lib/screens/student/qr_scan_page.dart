@@ -47,7 +47,7 @@ class _QRScanPageState extends State<QRScanPage> {
 
       if (rawCode != null) {
         setState(() {
-          scannedCode = rawCode;  // Update UI with scanned QR code
+          scannedCode = rawCode; // Update UI with scanned QR code
           isProcessing = true;
         });
 
@@ -56,12 +56,14 @@ class _QRScanPageState extends State<QRScanPage> {
         await controller.stop();
 
         print('==================== SCANNER OUTPUT ====================');
-        print('📷 Scanned QR Code: $rawCode');
+        print('📷 Scanned QR Code (Base64): $rawCode');
         print('========================================================');
         print('Student ID: ${widget.studentId}');
 
         try {
-          final Map<String, dynamic> qrData = jsonDecode(rawCode);
+          // Decode Base64 and parse JSON
+          final decoded = utf8.decode(base64Decode(rawCode));
+          final Map<String, dynamic> qrData = jsonDecode(decoded);
 
           if (!qrData.containsKey('session_id') || !qrData.containsKey('qr_token')) {
             throw FormatException('Invalid QR data format');
@@ -138,8 +140,6 @@ class _QRScanPageState extends State<QRScanPage> {
           MobileScanner(
             controller: controller,
             onDetect: _onDetect,
-            // Only scan if canScan is true
-            // We rely on onDetect ignoring events if canScan is false
           ),
 
           // Center overlay box for aiming
@@ -168,7 +168,9 @@ class _QRScanPageState extends State<QRScanPage> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  scannedCode.isEmpty ? 'Waiting for scan...' : 'Scanned: $scannedCode',
+                  scannedCode.isEmpty
+                      ? 'Waiting for scan...'
+                      : 'Scanned (Base64): $scannedCode',
                   style: const TextStyle(color: Colors.white, fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
