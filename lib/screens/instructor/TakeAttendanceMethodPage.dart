@@ -2,51 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import 'QrAttendancePage.dart'; // Ensure correct path
-import 'ManualAttendancePage.dart'; // Ensure correct path
+import 'QrAttendancePage.dart';  // Make sure the relative path is correct
+import 'ManualAttendancePage.dart'; // Make sure this path is correct
 
-class TakeAttendanceMethodPage extends StatefulWidget {
+class TakeAttendanceMethodPage extends StatelessWidget {
+  final DateTime selectedDate;
   final String courseTitle;
   final String courseId;
   final int sessionNumber;
-
   const TakeAttendanceMethodPage({
     Key? key,
+    required this.selectedDate,
     required this.courseTitle,
     required this.courseId,
     required this.sessionNumber,
   }) : super(key: key);
 
   @override
-  State<TakeAttendanceMethodPage> createState() => _TakeAttendanceMethodPageState();
-}
-
-class _TakeAttendanceMethodPageState extends State<TakeAttendanceMethodPage> {
-  DateTime? selectedDate;
-
-  Future<void> _pickDate(BuildContext context) async {
-    final DateTime now = DateTime.now(); // Use current date & time
-
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: now,
-      firstDate: DateTime(2020, 1, 1),
-      lastDate: now, // Include today up to this moment
-    );
-
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-      });
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
-    final formattedDate = selectedDate != null
-        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
-        : 'No date selected';
+    final String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1F8FB),
@@ -65,75 +40,59 @@ class _TakeAttendanceMethodPageState extends State<TakeAttendanceMethodPage> {
             color: Colors.black,
           ),
         ),
+        centerTitle: false,
       ),
       body: Padding(
         padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 16 : 32, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            ElevatedButton.icon(
-              onPressed: () => _pickDate(context),
-              icon: const Icon(Icons.calendar_today),
-              label: Text(
-                selectedDate == null ? 'Select Date' : 'Date: $formattedDate',
-                style: GoogleFonts.jost(fontSize: 16),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black87,
-                elevation: 3,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildMethodCard(
+                    context,
+                    icon: Icons.qr_code_scanner,
+                    title: "QR Code & Face Recognition",
+                    subtitle: "Scan student QR codes with live face detection",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => QrAttendancePage(
+                            courseId: courseId,
+                            courseTitle: courseTitle,
+                            selectedDate: selectedDate,
+                            sessionNumber: sessionNumber,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _buildMethodCard(
+                    context,
+                    icon: Icons.edit,
+                    title: "Manual Attendance",
+                    subtitle: "Mark students manually for this session",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ManualAttendancePage(
+                            courseId: courseId,
+                            courseTitle: courseTitle,
+                            selectedDate: selectedDate,
+                            sessionNumber: sessionNumber,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 30),
-            if (selectedDate != null)
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildMethodCard(
-                      context,
-                      icon: Icons.qr_code_scanner,
-                      title: "QR Code & Face Recognition",
-                      subtitle: "Scan student QR codes with live face detection",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => QrAttendancePage(
-                              courseId: widget.courseId,
-                              courseTitle: widget.courseTitle,
-                              selectedDate: selectedDate!,
-                              sessionNumber: widget.sessionNumber,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    _buildMethodCard(
-                      context,
-                      icon: Icons.edit,
-                      title: "Manual Attendance",
-                      subtitle: "Mark students manually for this session",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ManualAttendancePage(
-                              courseId: widget.courseId,
-                              courseTitle: widget.courseTitle,
-                              selectedDate: selectedDate!,
-                              sessionNumber: widget.sessionNumber,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
           ],
         ),
       ),
