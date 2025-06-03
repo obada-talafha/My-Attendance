@@ -25,6 +25,7 @@ class ManualAttendancePage extends StatefulWidget {
 class _ManualAttendancePageState extends State<ManualAttendancePage> {
   List<Map<String, dynamic>> students = [];
   bool isLoading = true;
+  bool hasChanges = false;
 
   @override
   void initState() {
@@ -34,26 +35,24 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
 
   Future<void> fetchStudents() async {
     final url = Uri.parse(
-      'https://my-attendance-1.onrender.com/manualAttendance/${widget.courseId}/${widget.sessionNumber}',
+      'https://my-attendance-1.onrender.com/manual-attendance/${widget.courseId}/${widget.sessionNumber}',
     );
 
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-
         setState(() {
-          students = data
-              .asMap()
-              .entries
-              .map((entry) => {
-            "no": (entry.key + 1).toString().padLeft(2, '0'),
-            "name": entry.value["student_name"],
-            "stNo": entry.value["student_id"].toString(),
-            "absNo": entry.value["absence_count"] ?? 0,
-            "isPresent": entry.value["is_present"] ?? false,
-          })
-              .toList();
+          students = data.asMap().entries.map((entry) {
+            final s = entry.value;
+            return {
+              "no": (entry.key + 1).toString().padLeft(2, '0'),
+              "name": s["student_name"],
+              "stNo": s["student_id"].toString(),
+              "absNo": s["absence_count"] ?? 0,
+              "isPresent": s["is_present"] ?? false,
+            };
+          }).toList();
           isLoading = false;
         });
       } else {
@@ -61,28 +60,21 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
       }
     } catch (e) {
       print('Error fetching students: $e');
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
 
-  Future<void> updateAttendance(String studentId, bool isPresent) async {
-    final url = Uri.parse('https://my-attendance-1.onrender.com/api/manual-attendance/save');
-
-    // Prepare the students list for the API payload.
-    final List<Map<String, dynamic>> updatedStudents = students.map((student) {
-      return {
-        "student_id": student["stNo"],
-        "is_present": student["isPresent"],
-      };
-    }).toList();
+  Future<void> updateSingleAttendance(String studentId, bool isPresent) async {
+    final url = Uri.parse(
+        'https://my-attendance-1.onrender.com/api/manual-attendance/save');
 
     final body = {
       "course_name": widget.courseId,
       "session_number": widget.sessionNumber,
       "session_date": DateFormat('yyyy-MM-dd').format(widget.selectedDate),
-      "students": updatedStudents,
+      "students": [
+        {"student_id": studentId, "is_present": isPresent}
+      ],
     };
 
     try {
@@ -91,12 +83,49 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(body),
       );
-
       if (response.statusCode != 200) {
-        throw Exception('Failed to update attendance');
+        throw Exception("Failed to update attendance");
       }
     } catch (e) {
-      print('Error updating attendance: $e');
+      print('Error updating student attendance: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update attendance for $studentId')),
+      );
+    }
+  }
+
+  Future<void> updateAllAttendance() async {
+    final url = Uri.parse(
+        'https://my-attendance-1.onrender.com/api/manual-attendance/save');
+
+    final body = {
+      "course_name": widget.courseId,
+      "session_number": widget.sessionNumber,
+      "session_date": DateFormat('yyyy-MM-dd').format(widget.selectedDate),
+      "students": students.map((s) {
+        return {
+          "student_id": s["stNo"],
+          "is_present": s["isPresent"],
+        };
+      }).toList(),
+    };
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(body),
+      );
+      if (response.statusCode == 200) {
+        setState(() => hasChanges = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Attendance saved successfully!')),
+        );
+      } else {
+        throw Exception('Failed to update all attendance');
+      }
+    } catch (e) {
+      print('Error updating all attendance: $e');
     }
   }
 
@@ -122,6 +151,14 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          if (hasChanges)
+            IconButton(
+              icon: const Icon(Icons.save, color: Colors.green),
+              tooltip: 'Save All',
+              onPressed: updateAllAttendance,
+            ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -131,8 +168,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Text(
               "${widget.courseTitle} | $dateStr",
-              style:
-              GoogleFonts.jost(fontSize: 14, color: Colors.black54),
+              style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
             ),
           ),
           Expanded(
@@ -179,7 +215,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
     if (student["absNo"] >= 10) {
       bgColor = Colors.redAccent.withOpacity(0.3);
     } else if (student["absNo"] >= 9) {
-      bgColor = Colors.yellowAccent.withOpacity(0.3);
+      bgColor = Colors.orangeAccent.withOpacity(0.3);
     }
 
     return TableRow(
@@ -195,17 +231,16 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
             value: student["isPresent"],
             onChanged: (bool value) {
               setState(() {
+                int oldAbs = student["absNo"];
                 if (!value && student["isPresent"]) {
                   student["absNo"] += 1;
-                } else if (value &&
-                    !student["isPresent"] &&
-                    student["absNo"] > 0) {
+                } else if (value && !student["isPresent"] && oldAbs > 0) {
                   student["absNo"] -= 1;
                 }
                 student["isPresent"] = value;
+                hasChanges = true;
               });
-              // Update the attendance for all students at once
-              updateAttendance(student["stNo"], value);
+              updateSingleAttendance(student["stNo"], value);
             },
             activeColor: Colors.green,
             inactiveTrackColor: Colors.redAccent,
