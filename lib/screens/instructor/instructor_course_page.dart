@@ -27,8 +27,8 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
-      firstDate: DateTime.now(), // Prevent past dates
-      lastDate: DateTime(2026),
+      firstDate: DateTime(2025), // Prevent past dates
+      lastDate: DateTime.now(),
     );
 
     if (picked != null && picked != selectedDate) {

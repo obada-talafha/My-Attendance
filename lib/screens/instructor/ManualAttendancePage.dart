@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ManualAttendancePage extends StatefulWidget {
-  final DateTime selectedDate;
-  final String courseTitle;
   final String courseId;
+  final String courseTitle;
   final int sessionNumber;
+  final DateTime selectedDate;
+
   const ManualAttendancePage({
     Key? key,
-    required this.selectedDate,
-    required this.courseTitle,
     required this.courseId,
+    required this.courseTitle,
     required this.sessionNumber,
+    required this.selectedDate,
   }) : super(key: key);
 
   @override
@@ -20,16 +23,75 @@ class ManualAttendancePage extends StatefulWidget {
 }
 
 class _ManualAttendancePageState extends State<ManualAttendancePage> {
-  List<Map<String, dynamic>> students = [
-    {"no": "01", "name": "Mohammad Ali", "stNo": "155666", "absNo": 1, "isPresent": false},
-    {"no": "02", "name": "Omar Omari", "stNo": "131945", "absNo": 0, "isPresent": true},
-    {"no": "03", "name": "Yosef Qudah", "stNo": "125567", "absNo": 1, "isPresent": false},
-    {"no": "04", "name": "Mawada Basheer", "stNo": "124734", "absNo": 0, "isPresent": true},
-    {"no": "05", "name": "Yazan Refai", "stNo": "160789", "absNo": 2, "isPresent": true},
-    {"no": "06", "name": "Ahmad Tariq", "stNo": "153457", "absNo": 8, "isPresent": true},
-    {"no": "07", "name": "Islah Zakaria", "stNo": "154245", "absNo": 8, "isPresent": false},
-    {"no": "08", "name": "Sara Ahmad", "stNo": "157358", "absNo": 9, "isPresent": true},
-  ];
+  List<Map<String, dynamic>> students = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchStudents();
+  }
+
+  Future<void> fetchStudents() async {
+    final url = Uri.parse(
+      'https://my-attendance-1.onrender.com/manualAttendance/${widget.courseId}/${widget.sessionNumber}',
+    );
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+
+        setState(() {
+          students = data
+              .asMap()
+              .entries
+              .map((entry) => {
+            "no": (entry.key + 1).toString().padLeft(2, '0'),
+            "name": entry.value["student_name"],
+            "stNo": entry.value["student_id"].toString(),
+            "absNo": entry.value["absence_count"] ?? 0,
+            "isPresent": entry.value["is_present"] ?? false,
+          })
+              .toList();
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load students');
+      }
+    } catch (e) {
+      print('Error fetching students: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> updateAttendance(String studentId, bool isPresent) async {
+    final url = Uri.parse(
+        'https://my-attendance-1.onrender.com/api/instructor/manualAttendance/update');
+
+    final body = {
+      "student_id": studentId,
+      "course_id": widget.courseId,
+      "session_number": widget.sessionNumber,
+      "is_present": isPresent,
+    };
+
+    try {
+      final response = await http.put(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update attendance');
+      }
+    } catch (e) {
+      print('Error updating attendance: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,13 +116,16 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         ),
         centerTitle: true,
       ),
-      body: Column(
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Text(
               "${widget.courseTitle} | $dateStr",
-              style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
+              style:
+              GoogleFonts.jost(fontSize: 14, color: Colors.black54),
             ),
           ),
           Expanded(
@@ -68,7 +133,8 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Table(
-                  border: TableBorder.all(color: const Color(0xFFE8F1FF)),
+                  border:
+                  TableBorder.all(color: const Color(0xFFE8F1FF)),
                   columnWidths: const {
                     0: FlexColumnWidth(1),
                     1: FlexColumnWidth(3),
@@ -78,7 +144,8 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
                   },
                   children: [
                     _buildTableHeader(),
-                    for (var student in students) _buildTableRow(student),
+                    for (var student in students)
+                      _buildTableRow(student),
                   ],
                 ),
               ),
@@ -114,7 +181,8 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
       decoration: bgColor != null ? BoxDecoration(color: bgColor) : null,
       children: [
         _buildCell(student["no"], bold: true),
-        _buildCell(student["name"], color: Colors.blueAccent, bold: true),
+        _buildCell(student["name"],
+            color: Colors.blueAccent, bold: true),
         _buildCell(student["stNo"]),
         _buildCell(student["absNo"].toString()),
         Padding(
@@ -125,11 +193,14 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
               setState(() {
                 if (!value && student["isPresent"]) {
                   student["absNo"] += 1;
-                } else if (value && !student["isPresent"] && student["absNo"] > 0) {
+                } else if (value &&
+                    !student["isPresent"] &&
+                    student["absNo"] > 0) {
                   student["absNo"] -= 1;
                 }
                 student["isPresent"] = value;
               });
+              updateAttendance(student["stNo"], value);
             },
             activeColor: Colors.green,
             inactiveTrackColor: Colors.redAccent,
