@@ -30,7 +30,7 @@ app.use(express.json());
 app.use('/mark-attendance', studentQrAttendanceRouter);
 
 // Manual Attendance route ✅
-app.use(manualAttendanceRouter);
+app.use('/manual-attendance', manualAttendanceRouter);
 
 // Auth routes
 app.post('/loginStudent', loginStudent);

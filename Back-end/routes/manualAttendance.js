@@ -3,62 +3,95 @@ import pool from '../db/index.js';
 
 const router = express.Router();
 
-// Updated 3/6/2025
-// Save manual attendance records
-router.post('/api/manual-attendance/save', async (req, res) => {
-  const { course_name, session_number, session_date, students } = req.body;
+/**
+ * GET /manual-attendance/:courseId/:sessionNumber
+ * Returns all students enrolled in a course with their attendance status for the given session.
+ */
+router.get('/:courseId/:sessionNumber', async (req, res) => {
+  const { courseId, sessionNumber } = req.params;
 
-  if (!course_name || !session_number || !Array.isArray(students)) {
-    return res.status(400).json({
-      success: false,
-      message: "Missing or invalid course_name, session_number, or students list"
-    });
+  try {
+    const query = `
+      SELECT
+        s.student_id,
+        s.student_name,
+        COALESCE(att.is_present, false) AS is_present,
+        COALESCE(abs.absence_count, 0) AS absence_count
+      FROM students s
+      JOIN enrollment e ON e.student_id = s.student_id AND e.course_name = $1
+      LEFT JOIN qr_session qs ON qs.course_name = e.course_name AND qs.session_number = $2
+      LEFT JOIN attendance att ON att.student_id = s.student_id AND att.session_id = qs.session_id
+      LEFT JOIN (
+        SELECT student_id, COUNT(*) AS absence_count
+        FROM attendance
+        WHERE is_present = false AND course_name = $1
+        GROUP BY student_id
+      ) abs ON abs.student_id = s.student_id
+      WHERE e.course_name = $1
+      ORDER BY s.student_name;
+    `;
+
+    const result = await pool.query(query, [courseId, sessionNumber]);
+    res.json(result.rows);
+
+  } catch (err) {
+    console.error('Fetch students error:', err.message);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /manual-attendance/update
+ * Updates or inserts a student's attendance for a specific session.
+ */
+router.put('/update', async (req, res) => {
+  const { student_id, course_id, session_number, is_present } = req.body;
+
+  if (!student_id || !course_id || !session_number || typeof is_present !== 'boolean') {
+    return res.status(400).json({ success: false, message: 'Missing or invalid data' });
   }
 
   try {
-    // 1. Get session_id from qr_session
-    const sessionQuery = await pool.query(
-      `SELECT session_id FROM qr_session WHERE course_name = $1 AND session_number = $2`,
-      [course_name, session_number]
+    // Get session_id from qr_session table
+    const sessionRes = await pool.query(
+      'SELECT session_id FROM qr_session WHERE course_name = $1 AND session_number = $2',
+      [course_id, session_number]
     );
 
-    if (sessionQuery.rowCount === 0) {
+    if (sessionRes.rowCount === 0) {
       return res.status(404).json({ success: false, message: 'Session not found' });
     }
 
-    const session_id = sessionQuery.rows[0].session_id;
+    const session_id = sessionRes.rows[0].session_id;
 
-    // 2. Process each student
-    for (const student of students) {
-      const { student_id, is_present } = student;
+    // Check if attendance exists
+    const attendanceRes = await pool.query(
+      'SELECT * FROM attendance WHERE student_id = $1 AND session_id = $2',
+      [student_id, session_id]
+    );
 
-      // 2.1 Check if enrolled
-      const enrollmentQuery = await pool.query(
-        `SELECT 1 FROM enrollment WHERE student_id = $1 AND course_name = $2 AND session_number = $3`,
-        [student_id, course_name, session_number]
+    if (attendanceRes.rowCount > 0) {
+      // Update attendance
+      await pool.query(
+        'UPDATE attendance SET is_present = $1, marked_at = NOW() WHERE student_id = $2 AND session_id = $3',
+        [is_present, student_id, session_id]
       );
-      if (enrollmentQuery.rowCount === 0) continue;
-
-      // 2.2 Check if attendance already exists
-      const attendanceExists = await pool.query(
-        `SELECT 1 FROM attendance WHERE student_id = $1 AND session_id = $2`,
-        [student_id, session_id]
-      );
-      if (attendanceExists.rowCount > 0) continue;
-
-      // 2.3 Insert attendance
+    } else {
+      // Insert attendance
       await pool.query(
         `INSERT INTO attendance (
-           session_id, student_id, is_present, verified_face, marked_at, session_date, session_number, course_name
-         ) VALUES ($1, $2, $3, false, NOW(), $4, $5, $6)`,
-        [session_id, student_id, is_present, session_date, session_number, course_name]
+          session_id, student_id, is_present, verified_face, marked_at, session_date, session_number, course_name
+        ) VALUES (
+          $1, $2, $3, false, NOW(), NOW()::date, $4, $5
+        )`,
+        [session_id, student_id, is_present, session_number, course_id]
       );
     }
 
-    res.status(200).json({ success: true, message: 'Manual attendance saved successfully' });
+    res.json({ success: true, message: 'Attendance updated successfully' });
 
   } catch (err) {
-    console.error('Manual Attendance Error:', err.message);
+    console.error('Update attendance error:', err.message);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });

@@ -68,18 +68,25 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
   }
 
   Future<void> updateAttendance(String studentId, bool isPresent) async {
-    final url = Uri.parse(
-        'https://my-attendance-1.onrender.com/api/instructor/manualAttendance/update');
+    final url = Uri.parse('https://my-attendance-1.onrender.com/api/manual-attendance/save');
+
+    // Prepare the students list for the API payload.
+    final List<Map<String, dynamic>> updatedStudents = students.map((student) {
+      return {
+        "student_id": student["stNo"],
+        "is_present": student["isPresent"],
+      };
+    }).toList();
 
     final body = {
-      "student_id": studentId,
-      "course_id": widget.courseId,
+      "course_name": widget.courseId,
       "session_number": widget.sessionNumber,
-      "is_present": isPresent,
+      "session_date": DateFormat('yyyy-MM-dd').format(widget.selectedDate),
+      "students": updatedStudents,
     };
 
     try {
-      final response = await http.put(
+      final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(body),
@@ -133,8 +140,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Table(
-                  border:
-                  TableBorder.all(color: const Color(0xFFE8F1FF)),
+                  border: TableBorder.all(color: const Color(0xFFE8F1FF)),
                   columnWidths: const {
                     0: FlexColumnWidth(1),
                     1: FlexColumnWidth(3),
@@ -144,8 +150,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
                   },
                   children: [
                     _buildTableHeader(),
-                    for (var student in students)
-                      _buildTableRow(student),
+                    for (var student in students) _buildTableRow(student),
                   ],
                 ),
               ),
@@ -181,8 +186,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
       decoration: bgColor != null ? BoxDecoration(color: bgColor) : null,
       children: [
         _buildCell(student["no"], bold: true),
-        _buildCell(student["name"],
-            color: Colors.blueAccent, bold: true),
+        _buildCell(student["name"], color: Colors.blueAccent, bold: true),
         _buildCell(student["stNo"]),
         _buildCell(student["absNo"].toString()),
         Padding(
@@ -200,6 +204,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
                 }
                 student["isPresent"] = value;
               });
+              // Update the attendance for all students at once
               updateAttendance(student["stNo"], value);
             },
             activeColor: Colors.green,
