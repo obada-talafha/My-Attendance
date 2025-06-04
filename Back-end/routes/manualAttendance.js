@@ -1,9 +1,11 @@
-const express = require('express');
-const router = express.Router();
-const pool = require('../db'); // PostgreSQL pool
+// routes/manualAttendance.js
+import express from 'express';
+import pool from '../db.js';  // Note the .js extension for ES modules
+
+const manualAttendanceRouter = express.Router();
 
 // 1. GET students and their attendance info
-router.get('/:courseName/:sessionNumber', async (req, res) => {
+manualAttendanceRouter.get('/:courseName/:sessionNumber', async (req, res) => {
   const { courseName, sessionNumber } = req.params;
 
   try {
@@ -36,7 +38,7 @@ router.get('/:courseName/:sessionNumber', async (req, res) => {
 });
 
 // 2. POST save manual attendance
-router.post('/save', async (req, res) => {
+manualAttendanceRouter.post('/save', async (req, res) => {
   const { course_name, session_number, session_date, students } = req.body;
 
   try {
@@ -75,4 +77,4 @@ router.post('/save', async (req, res) => {
   }
 });
 
-module.exports = router;
+export { manualAttendanceRouter };

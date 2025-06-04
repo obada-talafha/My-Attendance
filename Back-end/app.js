@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import bodyParser from 'body-parser';
 
 // Import routes
 import { loginStudent, loginAdmin, loginInstructor } from './routes/auth.js';
@@ -16,9 +15,10 @@ import { deleteAttendance } from './routes/deleteAbsences.js';
 import { getStudentsInCourse } from './routes/viewAllStudentInCourse.js';
 import { createQRSession } from './routes/QR_session.js';
 import { verifyFace } from './routes/verifyFace.js';
+
 import studentQrAttendanceRouter from './routes/studentQrAttendance.js';
 import endSessionRouter from './routes/endSession.js';
-import manualAttendanceRouter from './routes/manualAttendance.js'; // ✅ NEW
+import { manualAttendanceRouter } from './routes/manualAttendance.js';
 
 const app = express();
 
