@@ -30,7 +30,7 @@ manualAttendanceRouter.get('/:courseName/:sessionNumber', async (req, res) => {
         FROM attendance
         WHERE course_name = $1 AND session_number = $2::int
       ) a_session ON a_session.student_id = s.student_id
-      WHERE e.course_name = $1 AND e.session_number = $2
+      WHERE e.course_name = $1 AND e.session_number = $2::text
     `;
 
     const { rows } = await pool.query(studentsQuery, [courseName, sessionNumber]);
@@ -40,6 +40,7 @@ manualAttendanceRouter.get('/:courseName/:sessionNumber', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 /**
  * POST save manual attendance for students
