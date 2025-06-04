@@ -22,13 +22,14 @@ class ManualAttendancePage extends StatefulWidget {
 
 class _ManualAttendancePageState extends State<ManualAttendancePage> {
   List<Map<String, dynamic>> students = [];
+  List<Map<String, dynamic>> filteredStudents = [];
   bool isLoading = true;
   bool hasChanges = false;
+  String searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    print('ManualAttendancePage received courseId: "${widget.courseTitle}"');
     fetchStudents();
   }
 
@@ -37,79 +38,62 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
       'https://my-attendance-1.onrender.com/manual-attendance/${widget.courseTitle}/${widget.sessionNumber}',
     );
 
-    print('Fetching students from: $url');
-
     try {
       final response = await http.get(url);
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+        final Set<String> addedIds = {};
+        final List<Map<String, dynamic>> uniqueStudents = [];
+
+        for (var student in data) {
+          final id = student["student_id"].toString();
+          if (!addedIds.contains(id)) {
+            addedIds.add(id);
+            uniqueStudents.add({
+              "no": (uniqueStudents.length + 1).toString().padLeft(2, '0'),
+              "name": student["student_name"],
+              "stNo": id,
+              "absNo": student["absence_count"] ?? 0,
+              "isPresent": true,
+            });
+          }
+        }
+
         setState(() {
-          students = data.asMap().entries.map((entry) => {
-            "no": (entry.key + 1).toString().padLeft(2, '0'),
-            "name": entry.value["student_name"],
-            "stNo": entry.value["student_id"].toString(),
-            "absNo": entry.value["absence_count"] ?? 0,
-            "isPresent": entry.value["is_present"] ?? false,
-          }).toList();
+          students = uniqueStudents;
+          filteredStudents = List.from(uniqueStudents);
           isLoading = false;
         });
       } else {
-        print('Failed to load students. Status code: ${response.statusCode}');
-        print('Response body: ${response.body}');
         throw Exception('Failed to load students');
       }
     } catch (e) {
-      print('Error fetching students: $e');
+      print('Error: $e');
       setState(() => isLoading = false);
     }
   }
 
-  Future<void> updateSingleAttendance(String studentId, bool isPresent) async {
-    final url =
-    Uri.parse('https://my-attendance-1.onrender.com/api/manual-attendance/save');
-
-    final body = {
-      "course_name": widget.courseTitle,
-      "session_number": widget.sessionNumber,
-      "session_date": DateFormat('yyyy-MM-dd').format(widget.selectedDate),
-      "students": [
-        {"student_id": studentId, "is_present": isPresent}
-      ],
-    };
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(body),
-      );
-      if (response.statusCode != 200) {
-        print('Failed to update attendance for student $studentId');
-        print('Response status: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        throw Exception("Failed to update attendance");
-      }
-    } catch (e) {
-      print('Error updating student attendance: $e');
-    }
+  void filterStudents(String query) {
+    setState(() {
+      searchQuery = query;
+      filteredStudents = students.where((student) {
+        final name = student["name"].toString().toLowerCase();
+        final stNo = student["stNo"].toString().toLowerCase();
+        final q = query.toLowerCase();
+        return name.contains(q) || stNo.contains(q);
+      }).toList();
+    });
   }
 
   Future<void> updateAllAttendance() async {
-    final url =
-    Uri.parse('https://my-attendance-1.onrender.com/api/manual-attendance/save');
-
+    final url = Uri.parse('https://my-attendance-1.onrender.com/manual-attendance/save');
     final body = {
       "course_name": widget.courseTitle,
-      "session_number": widget.sessionNumber,
+      "session_id": widget.sessionNumber,
       "session_date": DateFormat('yyyy-MM-dd').format(widget.selectedDate),
-      "students": students.map((s) {
-        return {
-          "student_id": s["stNo"],
-          "is_present": s["isPresent"],
-        };
+      "students": students.map((s) => {
+        "student_id": s["stNo"],
+        "is_present": s["isPresent"],
       }).toList(),
     };
 
@@ -119,19 +103,52 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(body),
       );
+
+      print('🔁 STATUS: ${response.statusCode}');
+      print('🔁 BODY: ${response.body}');
+
       if (response.statusCode == 200) {
-        setState(() => hasChanges = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Attendance saved successfully!')),
-        );
+        final jsonBody = jsonDecode(response.body);
+        if (jsonBody["success"] == true) {
+          setState(() => hasChanges = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Attendance saved successfully!')),
+          );
+        } else {
+          throw Exception("Backend error: ${jsonBody['message'] ?? 'Unknown error'}");
+        }
       } else {
-        print('Failed to update all attendance. Status code: ${response.statusCode}');
-        print('Response body: ${response.body}');
-        throw Exception('Failed to update all attendance');
+        throw Exception("Failed to save attendance. Server returned status ${response.statusCode}");
       }
     } catch (e) {
-      print('Error updating all attendance: $e');
+      print("❌ Error saving attendance: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving attendance: ${e.toString()}')),
+      );
     }
+  }
+
+  void markAll(bool present) {
+    setState(() {
+      for (var s in students) {
+        final wasPresent = s["isPresent"];
+        if (wasPresent != present) {
+          int abs = int.tryParse(s["absNo"].toString()) ?? 0;
+          s["absNo"] = present ? (abs > 0 ? abs - 1 : 0) : abs + 1;
+          s["isPresent"] = present;
+        }
+      }
+
+      // Update filtered list after bulk update
+      filteredStudents = students.where((student) {
+        final name = student["name"].toString().toLowerCase();
+        final stNo = student["stNo"].toString().toLowerCase();
+        final q = searchQuery.toLowerCase();
+        return name.contains(q) || stNo.contains(q);
+      }).toList();
+
+      hasChanges = true;
+    });
   }
 
   @override
@@ -149,20 +166,25 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         ),
         title: Text(
           "Manual Attendance",
-          style: GoogleFonts.jost(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
+          style: GoogleFonts.jost(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),
         ),
         centerTitle: true,
         actions: [
-          if (hasChanges)
-            IconButton(
-              icon: const Icon(Icons.save, color: Colors.green),
-              tooltip: 'Save All',
-              onPressed: updateAllAttendance,
-            ),
+          IconButton(
+            icon: const Icon(Icons.check_circle, color: Colors.green),
+            tooltip: "Mark All Present",
+            onPressed: () => markAll(true),
+          ),
+          IconButton(
+            icon: const Icon(Icons.cancel, color: Colors.redAccent),
+            tooltip: "Mark All Absent",
+            onPressed: () => markAll(false),
+          ),
+          IconButton(
+            icon: const Icon(Icons.save, color: Colors.blue),
+            tooltip: 'Save All',
+            onPressed: updateAllAttendance,
+          ),
         ],
       ),
       body: isLoading
@@ -173,17 +195,29 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Text(
               "${widget.courseTitle} | $dateStr",
-              style:
-              GoogleFonts.jost(fontSize: 14, color: Colors.black54),
+              style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search by name or ID',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onChanged: filterStudents,
+            ),
+          ),
+          const SizedBox(height: 10),
           Expanded(
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Table(
-                  border:
-                  TableBorder.all(color: const Color(0xFFE8F1FF)),
+                  border: TableBorder.all(color: const Color(0xFFE8F1FF)),
                   columnWidths: const {
                     0: FlexColumnWidth(1),
                     1: FlexColumnWidth(3),
@@ -193,7 +227,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
                   },
                   children: [
                     _buildTableHeader(),
-                    for (var student in students) _buildTableRow(student),
+                    for (var student in filteredStudents) _buildTableRow(student),
                   ],
                 ),
               ),
@@ -204,50 +238,49 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
     );
   }
 
-  TableRow _buildTableHeader() {
-    return TableRow(
-      decoration: const BoxDecoration(color: Color(0xFFE8F1FF)),
-      children: [
-        _buildHeaderCell("#NO"),
-        _buildHeaderCell("Student Name"),
-        _buildHeaderCell("#St.No"),
-        _buildHeaderCell("#Abs.No"),
-        _buildHeaderCell("Status"),
-      ],
-    );
-  }
+  TableRow _buildTableHeader() => TableRow(
+    decoration: const BoxDecoration(color: Color(0xFFE8F1FF)),
+    children: [
+      _buildHeaderCell("#NO"),
+      _buildHeaderCell("Student Name"),
+      _buildHeaderCell("#St.No"),
+      _buildHeaderCell("#Abs.No"),
+      _buildHeaderCell("Status"),
+    ],
+  );
 
-  TableRow _buildTableRow(Map<String, dynamic> student) {
+  TableRow _buildTableRow(Map<String, dynamic> s) {
+    final abs = int.tryParse(s["absNo"].toString()) ?? 0;
     Color? bgColor;
-    if (student["absNo"] >= 10) {
+
+    if (abs >= 10) {
       bgColor = Colors.redAccent.withOpacity(0.3);
-    } else if (student["absNo"] >= 9) {
+    } else if (abs >= 9) {
       bgColor = Colors.yellowAccent.withOpacity(0.3);
     }
 
     return TableRow(
       decoration: bgColor != null ? BoxDecoration(color: bgColor) : null,
       children: [
-        _buildCell(student["no"], bold: true),
-        _buildCell(student["name"], color: Colors.blueAccent, bold: true),
-        _buildCell(student["stNo"]),
-        _buildCell(student["absNo"].toString()),
+        _buildCell(s["no"], bold: true),
+        _buildCell(s["name"], color: Colors.blueAccent, bold: true),
+        _buildCell(s["stNo"]),
+        _buildCell(s["absNo"].toString()),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
           child: Switch(
-            value: student["isPresent"],
+            value: s["isPresent"],
             onChanged: (bool value) {
               setState(() {
-                if (!value && student["isPresent"]) {
-                  student["absNo"] += 1;
-                } else if (value && !student["isPresent"]) {
-                  student["absNo"] =
-                  (student["absNo"] > 0) ? student["absNo"] - 1 : 0;
+                final abs = int.tryParse(s["absNo"].toString()) ?? 0;
+                if (value && !s["isPresent"]) {
+                  s["absNo"] = abs > 0 ? abs - 1 : 0;
+                } else if (!value && s["isPresent"]) {
+                  s["absNo"] = abs + 1;
                 }
-                student["isPresent"] = value;
+                s["isPresent"] = value;
                 hasChanges = true;
               });
-              updateSingleAttendance(student["stNo"], value);
             },
             activeColor: Colors.green,
             inactiveTrackColor: Colors.redAccent,
@@ -257,32 +290,25 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
     );
   }
 
-  Widget _buildHeaderCell(String text) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.jost(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
+  Widget _buildHeaderCell(String text) => Padding(
+    padding: const EdgeInsets.all(8),
+    child: Text(
+      text,
+      textAlign: TextAlign.center,
+      style: GoogleFonts.jost(fontSize: 12, fontWeight: FontWeight.bold),
+    ),
+  );
 
-  Widget _buildCell(String text, {Color? color, bool bold = false}) {
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: GoogleFonts.jost(
-          fontSize: 12,
-          fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-          color: color ?? Colors.black,
-        ),
+  Widget _buildCell(String text, {Color? color, bool bold = false}) => Padding(
+    padding: const EdgeInsets.all(8),
+    child: Text(
+      text,
+      textAlign: TextAlign.center,
+      style: GoogleFonts.jost(
+        fontSize: 12,
+        fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+        color: color ?? Colors.black,
       ),
-    );
-  }
+    ),
+  );
 }
