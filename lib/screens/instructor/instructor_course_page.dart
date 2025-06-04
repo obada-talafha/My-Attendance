@@ -6,13 +6,11 @@ import 'ViewAttendanceRecordPage.dart';
 
 class InstructorCoursePage extends StatefulWidget {
   final String courseTitle;
-  final String courseId;
   final int sessionNumber;
 
   const InstructorCoursePage({
     super.key,
     required this.courseTitle,
-    required this.courseId,
     required this.sessionNumber,
   });
 
@@ -122,7 +120,6 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => TakeAttendanceMethodPage(
-                          courseId: widget.courseId,
                           courseTitle: widget.courseTitle,
                           selectedDate: selectedDate,
                           sessionNumber: widget.sessionNumber,                        ),
@@ -138,7 +135,6 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => ViewAttendancePage(
-                          courseId: widget.courseId,
                           courseTitle: widget.courseTitle,
                           selectedDate: selectedDate,
                         ),

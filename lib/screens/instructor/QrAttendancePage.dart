@@ -5,14 +5,12 @@ import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
 
 class QrAttendancePage extends StatefulWidget {
-  final String courseId;
   final String courseTitle;
   final DateTime selectedDate;
   final int sessionNumber;
 
   const QrAttendancePage({
     Key? key,
-    required this.courseId,
     required this.courseTitle,
     required this.selectedDate,
     required this.sessionNumber,

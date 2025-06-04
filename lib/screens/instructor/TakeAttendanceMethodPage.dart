@@ -8,13 +8,11 @@ import 'ManualAttendancePage.dart'; // Make sure this path is correct
 class TakeAttendanceMethodPage extends StatelessWidget {
   final DateTime selectedDate;
   final String courseTitle;
-  final String courseId;
   final int sessionNumber;
   const TakeAttendanceMethodPage({
     Key? key,
     required this.selectedDate,
     required this.courseTitle,
-    required this.courseId,
     required this.sessionNumber,
   }) : super(key: key);
 
@@ -61,7 +59,6 @@ class TakeAttendanceMethodPage extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => QrAttendancePage(
-                            courseId: courseId,
                             courseTitle: courseTitle,
                             selectedDate: selectedDate,
                             sessionNumber: sessionNumber,
@@ -81,7 +78,6 @@ class TakeAttendanceMethodPage extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => ManualAttendancePage(
-                            courseId: courseId,
                             courseTitle: courseTitle,
                             selectedDate: selectedDate,
                             sessionNumber: sessionNumber,
@@ -89,6 +85,8 @@ class TakeAttendanceMethodPage extends StatelessWidget {
                         ),
                       );
                     },
+
+
                   ),
                 ],
               ),

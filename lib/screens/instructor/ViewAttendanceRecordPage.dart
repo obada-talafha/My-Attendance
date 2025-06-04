@@ -5,13 +5,11 @@ import 'package:intl/intl.dart';
 class ViewAttendancePage extends StatefulWidget {
   final DateTime selectedDate;
   final String courseTitle;
-  final String courseId;
 
   const ViewAttendancePage({
     Key? key,
     required this.selectedDate,
     required this.courseTitle,
-    required this.courseId,
   }) : super(key: key);
 
   @override

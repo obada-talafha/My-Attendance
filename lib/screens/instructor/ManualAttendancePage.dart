@@ -5,17 +5,15 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class ManualAttendancePage extends StatefulWidget {
-  final String courseId;
+  final DateTime selectedDate;
   final String courseTitle;
   final int sessionNumber;
-  final DateTime selectedDate;
 
   const ManualAttendancePage({
     Key? key,
-    required this.courseId,
+    required this.selectedDate,
     required this.courseTitle,
     required this.sessionNumber,
-    required this.selectedDate,
   }) : super(key: key);
 
   @override
@@ -30,32 +28,37 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
   @override
   void initState() {
     super.initState();
+    print('ManualAttendancePage received courseId: "${widget.courseTitle}"');
     fetchStudents();
   }
 
   Future<void> fetchStudents() async {
     final url = Uri.parse(
-      'https://my-attendance-1.onrender.com/manual-attendance/${widget.courseId}/${widget.sessionNumber}',
+      'https://my-attendance-1.onrender.com/manual-attendance/${widget.courseTitle}/${widget.sessionNumber}',
     );
+
+    print('Fetching students from: $url');
 
     try {
       final response = await http.get(url);
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         setState(() {
-          students = data.asMap().entries.map((entry) {
-            final s = entry.value;
-            return {
-              "no": (entry.key + 1).toString().padLeft(2, '0'),
-              "name": s["student_name"],
-              "stNo": s["student_id"].toString(),
-              "absNo": s["absence_count"] ?? 0,
-              "isPresent": s["is_present"] ?? false,
-            };
+          students = data.asMap().entries.map((entry) => {
+            "no": (entry.key + 1).toString().padLeft(2, '0'),
+            "name": entry.value["student_name"],
+            "stNo": entry.value["student_id"].toString(),
+            "absNo": entry.value["absence_count"] ?? 0,
+            "isPresent": entry.value["is_present"] ?? false,
           }).toList();
           isLoading = false;
         });
       } else {
+        print('Failed to load students. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
         throw Exception('Failed to load students');
       }
     } catch (e) {
@@ -65,11 +68,11 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
   }
 
   Future<void> updateSingleAttendance(String studentId, bool isPresent) async {
-    final url = Uri.parse(
-        'https://my-attendance-1.onrender.com/api/manual-attendance/save');
+    final url =
+    Uri.parse('https://my-attendance-1.onrender.com/api/manual-attendance/save');
 
     final body = {
-      "course_name": widget.courseId,
+      "course_name": widget.courseTitle,
       "session_number": widget.sessionNumber,
       "session_date": DateFormat('yyyy-MM-dd').format(widget.selectedDate),
       "students": [
@@ -84,22 +87,22 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         body: jsonEncode(body),
       );
       if (response.statusCode != 200) {
+        print('Failed to update attendance for student $studentId');
+        print('Response status: ${response.statusCode}');
+        print('Response body: ${response.body}');
         throw Exception("Failed to update attendance");
       }
     } catch (e) {
       print('Error updating student attendance: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update attendance for $studentId')),
-      );
     }
   }
 
   Future<void> updateAllAttendance() async {
-    final url = Uri.parse(
-        'https://my-attendance-1.onrender.com/api/manual-attendance/save');
+    final url =
+    Uri.parse('https://my-attendance-1.onrender.com/api/manual-attendance/save');
 
     final body = {
-      "course_name": widget.courseId,
+      "course_name": widget.courseTitle,
       "session_number": widget.sessionNumber,
       "session_date": DateFormat('yyyy-MM-dd').format(widget.selectedDate),
       "students": students.map((s) {
@@ -122,6 +125,8 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
           const SnackBar(content: Text('Attendance saved successfully!')),
         );
       } else {
+        print('Failed to update all attendance. Status code: ${response.statusCode}');
+        print('Response body: ${response.body}');
         throw Exception('Failed to update all attendance');
       }
     } catch (e) {
@@ -168,7 +173,8 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Text(
               "${widget.courseTitle} | $dateStr",
-              style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
+              style:
+              GoogleFonts.jost(fontSize: 14, color: Colors.black54),
             ),
           ),
           Expanded(
@@ -176,7 +182,8 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Table(
-                  border: TableBorder.all(color: const Color(0xFFE8F1FF)),
+                  border:
+                  TableBorder.all(color: const Color(0xFFE8F1FF)),
                   columnWidths: const {
                     0: FlexColumnWidth(1),
                     1: FlexColumnWidth(3),
@@ -215,7 +222,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
     if (student["absNo"] >= 10) {
       bgColor = Colors.redAccent.withOpacity(0.3);
     } else if (student["absNo"] >= 9) {
-      bgColor = Colors.orangeAccent.withOpacity(0.3);
+      bgColor = Colors.yellowAccent.withOpacity(0.3);
     }
 
     return TableRow(
@@ -231,11 +238,11 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
             value: student["isPresent"],
             onChanged: (bool value) {
               setState(() {
-                int oldAbs = student["absNo"];
                 if (!value && student["isPresent"]) {
                   student["absNo"] += 1;
-                } else if (value && !student["isPresent"] && oldAbs > 0) {
-                  student["absNo"] -= 1;
+                } else if (value && !student["isPresent"]) {
+                  student["absNo"] =
+                  (student["absNo"] > 0) ? student["absNo"] - 1 : 0;
                 }
                 student["isPresent"] = value;
                 hasChanges = true;

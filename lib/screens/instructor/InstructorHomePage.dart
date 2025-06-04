@@ -266,9 +266,7 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
                                                                   courseTitle:
                                                                       course["course_name"] ??
                                                                       "",
-                                                                  courseId:
-                                                                      course["course_code"] ??
-                                                                      "",
+
                                                                   sessionNumber: int.tryParse(course["session_number"].toString()) ?? 0,
 
                                                                 ),

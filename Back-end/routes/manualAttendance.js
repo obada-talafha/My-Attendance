@@ -4,11 +4,11 @@ import pool from '../db/index.js';
 const router = express.Router();
 
 /**
- * GET /manual-attendance/:courseId/:sessionNumber
+ * GET /manual-attendance/:courseTitle/:sessionNumber
  * Returns all students enrolled in a course with their attendance status for the given session.
  */
-router.get('/:courseId/:sessionNumber', async (req, res) => {
-  const { courseId, sessionNumber } = req.params;
+router.get('/:courseTitle/:sessionNumber', async (req, res) => {
+  const { courseTitle, sessionNumber } = req.params;
 
   try {
     const query = `
@@ -31,7 +31,7 @@ router.get('/:courseId/:sessionNumber', async (req, res) => {
       ORDER BY s.student_name;
     `;
 
-    const result = await pool.query(query, [courseId, sessionNumber]);
+    const result = await pool.query(query, [courseTitle, sessionNumber]);
     res.json(result.rows);
 
   } catch (err) {
@@ -45,9 +45,9 @@ router.get('/:courseId/:sessionNumber', async (req, res) => {
  * Updates or inserts a student's attendance for a specific session.
  */
 router.put('/update', async (req, res) => {
-  const { student_id, course_id, session_number, is_present } = req.body;
+  const { student_id, course_title, session_number, is_present } = req.body;
 
-  if (!student_id || !course_id || !session_number || typeof is_present !== 'boolean') {
+  if (!student_id || !course_title || !session_number || typeof is_present !== 'boolean') {
     return res.status(400).json({ success: false, message: 'Missing or invalid data' });
   }
 
@@ -55,7 +55,7 @@ router.put('/update', async (req, res) => {
     // Get session_id from qr_session table
     const sessionRes = await pool.query(
       'SELECT session_id FROM qr_session WHERE course_name = $1 AND session_number = $2',
-      [course_id, session_number]
+      [course_title, session_number]
     );
 
     if (sessionRes.rowCount === 0) {
@@ -64,27 +64,28 @@ router.put('/update', async (req, res) => {
 
     const session_id = sessionRes.rows[0].session_id;
 
-    // Check if attendance exists
+    // Check if attendance already exists
     const attendanceRes = await pool.query(
       'SELECT * FROM attendance WHERE student_id = $1 AND session_id = $2',
       [student_id, session_id]
     );
 
     if (attendanceRes.rowCount > 0) {
-      // Update attendance
+      // Update existing record
       await pool.query(
         'UPDATE attendance SET is_present = $1, marked_at = NOW() WHERE student_id = $2 AND session_id = $3',
         [is_present, student_id, session_id]
       );
     } else {
-      // Insert attendance
+      // Insert new attendance record
       await pool.query(
         `INSERT INTO attendance (
-          session_id, student_id, is_present, verified_face, marked_at, session_date, session_number, course_name
+          session_id, student_id, is_present, verified_face, marked_at,
+          session_date, session_number, course_name
         ) VALUES (
           $1, $2, $3, false, NOW(), NOW()::date, $4, $5
         )`,
-        [session_id, student_id, is_present, session_number, course_id]
+        [session_id, student_id, is_present, session_number, course_title]
       );
     }
 
