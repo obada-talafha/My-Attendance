@@ -89,7 +89,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
     final url = Uri.parse('https://my-attendance-1.onrender.com/manual-attendance/save');
     final body = {
       "course_name": widget.courseTitle,
-      "session_id": widget.sessionNumber,
+      "session_number": widget.sessionNumber,
       "session_date": DateFormat('yyyy-MM-dd').format(widget.selectedDate),
       "students": students.map((s) => {
         "student_id": s["stNo"],
@@ -104,26 +104,43 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         body: jsonEncode(body),
       );
 
-      print('🔁 STATUS: ${response.statusCode}');
-      print('🔁 BODY: ${response.body}');
-
       if (response.statusCode == 200) {
         final jsonBody = jsonDecode(response.body);
         if (jsonBody["success"] == true) {
           setState(() => hasChanges = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Attendance saved successfully!')),
+            SnackBar(
+              content: const Text('Attendance saved successfully!'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 3),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
           );
         } else {
-          throw Exception("Backend error: ${jsonBody['message'] ?? 'Unknown error'}");
+          // Only show error if explicitly returned from backend
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Error: ${jsonBody['message'] ?? 'Unknown error'}"),
+              backgroundColor: Colors.green,
+            ),
+          );
         }
       } else {
-        throw Exception("Failed to save attendance. Server returned status ${response.statusCode}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Failed to save attendance (Status: ${response.statusCode})"),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
       print("❌ Error saving attendance: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error saving attendance: ${e.toString()}')),
+        SnackBar(
+          content: Text('Error saving attendance: ${e.toString()}'),
+          backgroundColor: Colors.green,
+        ),
       );
     }
   }
@@ -139,7 +156,6 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         }
       }
 
-      // Update filtered list after bulk update
       filteredStudents = students.where((student) {
         final name = student["name"].toString().toLowerCase();
         final stNo = student["stNo"].toString().toLowerCase();
