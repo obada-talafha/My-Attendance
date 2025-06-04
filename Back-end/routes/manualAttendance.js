@@ -1,6 +1,6 @@
 // routes/manualAttendance.js
 import express from 'express';
-import pool from '../db.js';  // Note the .js extension for ES modules
+import pool from '../db/index.js';
 
 const manualAttendanceRouter = express.Router();
 
