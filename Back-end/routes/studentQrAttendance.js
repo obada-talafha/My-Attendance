@@ -49,33 +49,25 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ error: 'Student not enrolled in this course/session' });
     }
 
-    // Step 3: Check if already marked
+    // ✅ Step 3: Check if attendance already exists
     const attendanceCheck = await pool.query(
       `SELECT is_present
        FROM attendance
-       WHERE session_id = $1 AND student_id = $2`,
-      [session_id, student_id]
+       WHERE student_id = $1 AND course_name = $2 AND session_number = $3 AND session_date = $4`,
+      [student_id, session.course_name, session.session_number, session.session_date]
     );
 
-    if (attendanceCheck.rowCount > 0 && attendanceCheck.rows[0].is_present === true) {
-      return res.status(200).json({ message: 'Attendance already marked earlier' });
+    if (attendanceCheck.rowCount > 0) {
+      return res.status(200).json({ message: 'You have already scanned the QR code' });
     }
 
-    // Step 4: Mark attendance
+    // ✅ Step 4: Insert attendance
     await pool.query(
       `INSERT INTO attendance (
          session_id, student_id, is_present, verified_face,
          marked_at, session_date, session_number, course_name
        )
-       VALUES ($1, $2, TRUE, FALSE, NOW(), $3, $4, $5)
-       ON CONFLICT (session_id, student_id)
-       DO UPDATE SET
-         is_present = TRUE,
-         verified_face = FALSE,
-         marked_at = NOW(),
-         session_date = $3,
-         session_number = $4,
-         course_name = $5`,
+       VALUES ($1, $2, TRUE, FALSE, NOW(), $3, $4, $5)`,
       [
         session_id,
         student_id,
