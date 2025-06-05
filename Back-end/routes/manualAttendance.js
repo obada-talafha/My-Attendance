@@ -33,10 +33,10 @@ manualAttendanceRouter.get('/:courseName/:sessionNumber', async (req, res) => {
     `;
 
     const { rows } = await pool.query(studentsQuery, [courseName, sessionNumber]);
-    res.status(200).json({ success: true, data: rows });
+    res.status(200).json(rows);
   } catch (error) {
     console.error('Error fetching students for manual attendance:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -46,20 +46,14 @@ manualAttendanceRouter.get('/:courseName/:sessionNumber', async (req, res) => {
 manualAttendanceRouter.post('/save', async (req, res) => {
   const { course_name, session_number, session_date, students } = req.body;
 
-  // ✅ Validate required fields
-  if (!course_name || !session_number || !session_date || !Array.isArray(students)) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid request: missing required fields or students is not an array'
-    });
-  }
-
   try {
     console.log(`Received attendance for course: ${course_name}, session: ${session_number}`);
 
+    // Loop over students and insert/update attendance directly in attendance table
     for (const student of students) {
       const { student_id, is_present } = student;
 
+      // Check if attendance record exists for this student, course, session, and date
       const checkResult = await pool.query(
         `
           SELECT attendance_id
@@ -70,6 +64,7 @@ manualAttendanceRouter.post('/save', async (req, res) => {
       );
 
       if (checkResult.rows.length > 0) {
+        // Update attendance record
         await pool.query(
           `
             UPDATE attendance
@@ -79,6 +74,7 @@ manualAttendanceRouter.post('/save', async (req, res) => {
           [is_present, checkResult.rows[0].attendance_id]
         );
       } else {
+        // Insert new attendance record
         await pool.query(
           `
             INSERT INTO attendance (
@@ -92,16 +88,10 @@ manualAttendanceRouter.post('/save', async (req, res) => {
       }
     }
 
-    res.status(200).json({
-      success: true,
-      message: 'Attendance saved successfully'
-    });
+    res.status(200).json({ message: 'Attendance saved successfully' });
   } catch (error) {
     console.error('Error saving manual attendance:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
