@@ -155,29 +155,6 @@ class _QRScanPageState extends State<QRScanPage> {
             ),
           ),
 
-          // Show scanned code text on top center
-          Positioned(
-            top: 80,
-            left: 16,
-            right: 16,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  scannedCode.isEmpty
-                      ? 'Waiting for scan...'
-                      : 'Scanned (Base64): $scannedCode',
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-
           // Zoom slider & label at bottom
           Positioned(
             bottom: 24,

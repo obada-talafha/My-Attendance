@@ -21,7 +21,7 @@ router.post('/', async (req, res) => {
 
     // Step 1: Verify QR session
     const sessionResult = await pool.query(
-      `SELECT course_name, session_number, qr_token FROM qr_session WHERE session_id = $1`,
+      `SELECT course_name, session_number, session_date, qr_token FROM qr_session WHERE session_id = $1`,
       [session_id]
     );
 
@@ -45,13 +45,25 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ error: 'Student not enrolled in this course/session' });
     }
 
-    // Step 3: Mark attendance (INSERT or UPDATE)
+    // Step 3: Mark attendance with extended info
     await pool.query(
-      `INSERT INTO attendance (session_id, student_id, is_present, verified_face, marked_at)
-       VALUES ($1, $2, TRUE, FALSE, NOW())
+      `INSERT INTO attendance (session_id, student_id, is_present, verified_face, marked_at, session_date, session_number, course_name)
+       VALUES ($1, $2, TRUE, FALSE, NOW(), $3, $4, $5)
        ON CONFLICT (session_id, student_id)
-       DO UPDATE SET is_present = TRUE, verified_face = FALSE, marked_at = NOW()`,
-      [session_id, student_id]
+       DO UPDATE SET
+         is_present = TRUE,
+         verified_face = FALSE,
+         marked_at = NOW(),
+         session_date = $3,
+         session_number = $4,
+         course_name = $5`,
+      [
+        session_id,
+        student_id,
+        session.session_date,
+        session.session_number,
+        session.course_name,
+      ]
     );
 
     return res.status(200).json({ message: 'Attendance marked successfully' });
