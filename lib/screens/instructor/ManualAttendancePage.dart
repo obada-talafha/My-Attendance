@@ -54,7 +54,7 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
               "name": student["student_name"],
               "stNo": id,
               "absNo": student["absence_count"] ?? 0,
-              "isPresent": true,
+              "isPresent": student["is_present"],
             });
           }
         }
@@ -65,11 +65,17 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
           isLoading = false;
         });
       } else {
-        throw Exception('Failed to load students');
+        throw Exception('Failed to load students (Status: ${response.statusCode})');
       }
     } catch (e) {
-      print('Error: $e');
+      print('❌ Error: $e');
       setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Error loading students: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -106,11 +112,11 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
 
       if (response.statusCode == 200) {
         final jsonBody = jsonDecode(response.body);
-        if (jsonBody["success"] == true) {
+        if (jsonBody["success"] == true || jsonBody["message"] == "Attendance saved successfully!") {
           setState(() => hasChanges = false);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Attendance saved successfully!'),
+              content: const Text('✅ Attendance saved successfully!'),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 3),
               behavior: SnackBarBehavior.floating,
@@ -118,19 +124,19 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
             ),
           );
         } else {
-          // Only show error if explicitly returned from backend
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Error: ${jsonBody['message'] ?? 'Unknown error'}"),
-              backgroundColor: Colors.green,
+              content: Text("⚠️ Warning: ${jsonBody['message'] ?? 'Unknown error'}"),
+              backgroundColor: Colors.amber,
             ),
           );
         }
+
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Failed to save attendance (Status: ${response.statusCode})"),
-            backgroundColor: Colors.green,
+            content: Text("❌ Server error (Status: ${response.statusCode})"),
+            backgroundColor: Colors.red,
           ),
         );
       }
@@ -138,8 +144,8 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
       print("❌ Error saving attendance: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving attendance: ${e.toString()}'),
-          backgroundColor: Colors.green,
+          content: Text('❌ Network error: ${e.toString()}'),
+          backgroundColor: Colors.red,
         ),
       );
     }
