@@ -52,13 +52,16 @@ router.post('/end-session', async (req, res) => {
     const absentees = enrolledIds.filter(id => !presentIds.includes(id));
 
     // Mark absentees in attendance table
-    const insertQuery = `
-      INSERT INTO attendance (
-        session_id, student_id, is_present, verified_face,
-        marked_at, session_date, session_number, course_name
-      ) VALUES (
-        $1, $2, false, false, NOW(), $3, $4, $5
-      )`;
+const insertQuery = `
+  INSERT INTO attendance (
+    session_id, student_id, is_present, verified_face,
+    marked_at, session_date, session_number, course_name
+  ) VALUES (
+    $1, $2, false, false, NOW(), $3, $4, $5
+  )
+  ON CONFLICT (student_id, course_name, session_number, session_date) DO NOTHING
+`;
+
 
     for (const student_id of absentees) {
       await client.query(insertQuery, [
