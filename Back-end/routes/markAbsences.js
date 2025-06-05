@@ -1,23 +1,29 @@
-import pool from '../db/index.js'; // Assuming you have the pool setup for database connection
+import pool from '../db/index.js';
 
-// Mark student as absent (insert record)
 const markAbsent = async (req, res) => {
   const { student_id, session_id } = req.body;
 
-  // Check if required fields are provided
   if (!student_id || !session_id) {
     return res.status(400).json({ success: false, message: "Missing required fields" });
   }
 
   try {
-    // Insert attendance with default is_present = false (absent)
+    // Only insert if no record exists
     const result = await pool.query(
       `INSERT INTO attendance (student_id, session_id, is_present)
-       VALUES ($1, $2, false)
-       ON CONFLICT (student_id, session_id)
-       DO UPDATE SET is_present = false, verified_face = false`,
+       SELECT $1, $2, false
+       WHERE NOT EXISTS (
+         SELECT 1 FROM attendance WHERE student_id = $1 AND session_id = $2
+       )`,
       [student_id, session_id]
     );
+
+    if (result.rowCount === 0) {
+      return res.status(200).json({
+        success: false,
+        message: 'Attendance record already exists, no changes made'
+      });
+    }
 
     res.status(200).json({
       success: true,
