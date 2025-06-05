@@ -51,26 +51,26 @@ router.post('/end-session', async (req, res) => {
     // Find students who didn't attend
     const absentees = enrolledIds.filter(id => !presentIds.includes(id));
 
-    // Mark absentees in attendance table
-const insertQuery = `
-  INSERT INTO attendance (
-    session_id, student_id, is_present, verified_face,
-    marked_at, session_date, session_number, course_name
-  ) VALUES (
-    $1, $2, false, false, NOW(), $3, $4, $5
-  )
-  ON CONFLICT (student_id, course_name, session_number, session_date) DO NOTHING
-`;
+    // Optimized batch insert for absentees
+    if (absentees.length > 0) {
+      const values = [];
+      const params = [session_id]; // session_id will be $1
 
+      absentees.forEach((student_id, index) => {
+        const base = index * 4 + 2; // param index starts after session_id
+        values.push(`($1, $${base}, false, false, NOW(), $${base + 1}, $${base + 2}, $${base + 3})`);
+        params.push(student_id, session_date, session_number, course_name);
+      });
 
-    for (const student_id of absentees) {
-      await client.query(insertQuery, [
-        session_id,
-        student_id,
-        session_date,
-        session_number,
-        course_name
-      ]);
+      const insertQuery = `
+        INSERT INTO attendance (
+          session_id, student_id, is_present, verified_face,
+          marked_at, session_date, session_number, course_name
+        ) VALUES ${values.join(', ')}
+        ON CONFLICT (student_id, course_name, session_number, session_date) DO NOTHING
+      `;
+
+      await client.query(insertQuery, params);
     }
 
     client.release();
