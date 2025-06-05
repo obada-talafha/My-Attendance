@@ -21,11 +21,13 @@ router.post('/', async (req, res) => {
 
     // Step 1: Verify QR session
     const sessionResult = await pool.query(
-      `SELECT course_name, session_number, session_date, qr_token FROM qr_session WHERE session_id = $1`,
+      `SELECT course_name, session_number, session_date, qr_token
+       FROM qr_session
+       WHERE session_id = $1`,
       [session_id]
     );
 
-    if (sessionResult.rows.length === 0) {
+    if (sessionResult.rowCount === 0) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
@@ -37,17 +39,34 @@ router.post('/', async (req, res) => {
 
     // Step 2: Check student enrollment
     const enrollResult = await pool.query(
-      `SELECT 1 FROM enrollment WHERE student_id = $1 AND course_name = $2 AND session_number = $3`,
+      `SELECT 1
+       FROM enrollment
+       WHERE student_id = $1 AND course_name = $2 AND session_number = $3`,
       [student_id, session.course_name, session.session_number]
     );
 
-    if (enrollResult.rows.length === 0) {
+    if (enrollResult.rowCount === 0) {
       return res.status(403).json({ error: 'Student not enrolled in this course/session' });
     }
 
-    // Step 3: Mark attendance with extended info
+    // Step 3: Check if already marked
+    const attendanceCheck = await pool.query(
+      `SELECT is_present
+       FROM attendance
+       WHERE session_id = $1 AND student_id = $2`,
+      [session_id, student_id]
+    );
+
+    if (attendanceCheck.rowCount > 0 && attendanceCheck.rows[0].is_present === true) {
+      return res.status(200).json({ message: 'Attendance already marked earlier' });
+    }
+
+    // Step 4: Mark attendance
     await pool.query(
-      `INSERT INTO attendance (session_id, student_id, is_present, verified_face, marked_at, session_date, session_number, course_name)
+      `INSERT INTO attendance (
+         session_id, student_id, is_present, verified_face,
+         marked_at, session_date, session_number, course_name
+       )
        VALUES ($1, $2, TRUE, FALSE, NOW(), $3, $4, $5)
        ON CONFLICT (session_id, student_id)
        DO UPDATE SET
@@ -67,6 +86,7 @@ router.post('/', async (req, res) => {
     );
 
     return res.status(200).json({ message: 'Attendance marked successfully' });
+
   } catch (error) {
     console.error('❌ Error marking attendance:', error.message);
     return res.status(500).json({ error: 'Internal server error', detail: error.message });
