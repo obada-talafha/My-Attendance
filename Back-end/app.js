@@ -7,8 +7,7 @@ import { loginStudent, loginAdmin, loginInstructor } from './routes/auth.js';
 // Student routes
 import { getStudentProfile } from './routes/studentController.js';
 import { getStudentCourses } from './routes/studentHome.js';
-import { getStudentAbsences } from './routes/getStudentAbsences.js'; // ✅ renamed to match file
-
+import studentAbsencesRoute from './routes/getStudentAbsences.js';
 // Instructor routes
 import { getInstructorHome } from './routes/instructorHome.js';
 import { getInstructorProfile } from './routes/instructorProfile.js';
