@@ -40,7 +40,7 @@ app.post('/loginInstructor', loginInstructor);
 // 🎓 Student
 app.get('/studentHome', getStudentCourses);
 app.get('/studentProfile', getStudentProfile);
-app.get('/student-absences', getStudentAbsences); // ✅ Updated route
+app.get('/student-absences', studentAbsencesRoute); // ✅ Updated route
 
 // 👨‍🏫 Instructor
 app.get('/instructorHome', getInstructorHome);
