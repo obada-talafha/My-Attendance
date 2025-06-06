@@ -9,7 +9,6 @@ import 'student_notifications_page.dart';
 import 'qr_scan_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 class Course {
   final String courseName;
   final String sessionNum;
@@ -81,7 +80,6 @@ class _StudentHomePageState extends State<StudentHomePage> {
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
 
-        // Check if API response is successful
         if (jsonData['success'] == true) {
           final List data = jsonData['courses'];
 
@@ -123,7 +121,6 @@ class _StudentHomePageState extends State<StudentHomePage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        automaticallyImplyLeading: true,
         iconTheme: const IconThemeData(color: Colors.black),
         title: Text(
           '',
@@ -139,9 +136,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => StudentNotificationsPage(),
-                ),
+                MaterialPageRoute(builder: (context) => StudentNotificationsPage()),
               );
             },
           ),
@@ -183,22 +178,9 @@ class _StudentHomePageState extends State<StudentHomePage> {
                   duration: Duration(milliseconds: 500 + index * 150),
                   curve: Curves.easeOut,
                   builder: (context, value, child) {
-                    return Transform.scale(
-                      scale: value,
-                      child: child,
-                    );
+                    return Transform.scale(scale: value, child: child);
                   },
-                  child: CourseCard(course: {
-                    "title": course.courseName,
-                    "secNo": course.sessionNum,
-                    "lineNo": course.studentId,
-                    "days": course.days,
-                    "time": course.time,
-                    "hall": course.hall,
-                    "instructor": course.instructor,
-                    "creditHours": course.creditHours,
-                    "absents": course.absents,
-                  }),
+                  child: CourseCard(course: course),
                 );
               },
             ),
@@ -211,20 +193,17 @@ class _StudentHomePageState extends State<StudentHomePage> {
           width: double.infinity,
           height: 60,
           child: TextButton(
-              onPressed: () async {
-                final prefs = await SharedPreferences.getInstance();
-                final studentId = prefs.getString('userId');
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              final studentId = prefs.getString('userId');
 
-                if (studentId == null) return;
+              if (studentId == null) return;
 
-                final scannedCode = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => QRScanPage(studentId: studentId),
-                  ),
-                );
-              },
-
+              final scannedCode = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => QRScanPage(studentId: studentId)),
+              );
+            },
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,
               shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -252,7 +231,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
 }
 
 class CourseCard extends StatelessWidget {
-  final Map<String, dynamic> course;
+  final Course course;
 
   const CourseCard({super.key, required this.course});
 
@@ -270,7 +249,7 @@ class CourseCard extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              course["title"],
+              course.courseName,
               textAlign: TextAlign.center,
               style: GoogleFonts.jost(
                 fontSize: isSmallScreen ? 18 : 20,
@@ -288,19 +267,21 @@ class CourseCard extends StatelessWidget {
                 1: FlexColumnWidth(3),
               },
               children: [
-                buildTableRow("Sec No.", course["secNo"]),
-                buildTableRow("Line No.", course["lineNo"]),
-                buildTableRow("Days", course["days"]),
-                buildTableRow("Time", course["time"]),
-                buildTableRow("Hall", course["hall"]),
-                buildTableRow("Instructor", course["instructor"]),
-                buildTableRow("Credit Hours", course["creditHours"]),
+                buildTableRow("Sec No.", course.sessionNum),
+                buildTableRow("Line No.", course.studentId),
+                buildTableRow("Days", course.days),
+                buildTableRow("Time", course.time),
+                buildTableRow("Hall", course.hall),
+                buildTableRow("Instructor", course.instructor),
+                buildTableRow("Credit Hours", course.creditHours),
               ],
             ),
             const SizedBox(height: 10),
             AbsenceButton(
-              absents: course["absents"],
-              courseTitle: course["title"],
+              absents: course.absents,
+              courseName: course.courseName,
+              sessionNum: course.sessionNum,
+              studentId: course.studentId,
             ),
           ],
         ),
@@ -340,12 +321,16 @@ class CourseCard extends StatelessWidget {
 
 class AbsenceButton extends StatelessWidget {
   final String absents;
-  final String courseTitle;
+  final String courseName;
+  final String sessionNum;
+  final String studentId;
 
   const AbsenceButton({
     super.key,
     required this.absents,
-    required this.courseTitle,
+    required this.courseName,
+    required this.sessionNum,
+    required this.studentId,
   });
 
   @override
@@ -366,11 +351,13 @@ class AbsenceButton extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) => AbsentsPage(
-                  absentDates: [], // Placeholder for now
-                  courseTitle: courseTitle,
+                  courseTitle: courseName,
+                  sessionNum: int.parse(sessionNum),    // convert to int
+                  studentId: studentId,      // convert to int
                 ),
               ),
             );
+
           },
           child: Row(
             mainAxisSize: MainAxisSize.min,

@@ -126,8 +126,8 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("⚠️ Warning: ${jsonBody['message'] ?? 'Unknown error'}"),
-              backgroundColor: Colors.amber,
+              content: Text(" ${jsonBody['message'] ?? 'Unknown error'}"),
+              backgroundColor: Colors.green,
             ),
           );
         }
