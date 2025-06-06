@@ -306,7 +306,6 @@ class CourseCard extends StatelessWidget {
               },
               children: [
                 buildTableRow("Sec No.", course.sessionNum),
-                buildTableRow("Line No.", course.studentId),
                 buildTableRow("Days", course.days),
                 buildTableRow("Time", course.time),
                 buildTableRow("Hall", course.hall),
