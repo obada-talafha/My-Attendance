@@ -3,14 +3,14 @@ import pool from '../db/index.js';
 // Updated 1/6/2025 
 
 const getStudentCourses = async (req, res) => {
-  const { student_id } = req.query;
+const student_id = parseInt(req.query.student_id);
 
-  if (!student_id) {
-    return res.status(400).json({
-      success: false,
-      message: "student_id is required",
-    });
-  }
+if (isNaN(student_id)) {
+  return res.status(400).json({
+    success: false,
+    message: "Invalid student_id",
+  });
+}
 
   try {
     // Step 1: Get enrolled courses and absence counts (adjusted for session_id mapping)
