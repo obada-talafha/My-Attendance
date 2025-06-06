@@ -35,14 +35,18 @@ class _AbsentsPageState extends State<AbsentsPage> {
     required String courseName,
     required int sessionNumber,
   }) async {
-    final url = Uri.parse('https://my-attendance-1.onrender.com/student-absences');
-    final response = await http.get(
-      url.replace(queryParameters: {
+    final url = Uri.parse('https://my-attendance-1.onrender.com/student-absences/absents');
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
         'student_id': studentId,
         'course_name': courseName,
-        'session_number': sessionNumber.toString(),
+        'session_number': sessionNumber,
       }),
     );
+
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
