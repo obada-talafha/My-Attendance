@@ -32,7 +32,10 @@ router.post('/absents', async (req, res) => {
       };
     });
 
-    res.json({ absents: absentDates });
+    res.json({
+      count: absentDates.length, // Total number of absences
+      absents: absentDates
+    });
   } catch (err) {
     console.error('Error fetching absents:', err);
     res.status(500).json({ error: 'Internal server error' });

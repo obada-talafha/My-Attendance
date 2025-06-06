@@ -18,7 +18,7 @@ class Course {
   final String hall;
   final String creditHours;
   final String instructor;
-  final String absents;
+  String absents; // updated dynamically
 
   Course({
     required this.courseName,
@@ -29,7 +29,7 @@ class Course {
     required this.hall,
     required this.creditHours,
     required this.instructor,
-    required this.absents,
+    this.absents = "0",
   });
 
   factory Course.fromJson(Map<String, dynamic> json) {
@@ -42,7 +42,6 @@ class Course {
       hall: json['session_location'],
       creditHours: json['credit_hours'].toString(),
       instructor: json['instructor_name'] ?? 'N/A',
-      absents: json['absents'].toString(),
     );
   }
 }
@@ -82,18 +81,28 @@ class _StudentHomePageState extends State<StudentHomePage> {
 
         if (jsonData['success'] == true) {
           final List data = jsonData['courses'];
+          final List<Course> loadedCourses = [];
 
-          final List<Course> loadedCourses = data.map((c) => Course.fromJson({
-            'course_name': c['course_name'],
-            'session_number': c['session_number'],
-            'student_id': studentId,
-            'days': c['days'],
-            'session_time': c['session_time'],
-            'session_location': c['session_location'],
-            'credit_hours': c['credit_hours'],
-            'instructor_name': c['instructor_name'] ?? 'N/A',
-            'absents': c['absents'] ?? '0',
-          })).toList();
+          for (var c in data) {
+            final course = Course.fromJson({
+              'course_name': c['course_name'],
+              'session_number': c['session_number'],
+              'student_id': studentId,
+              'days': c['days'],
+              'session_time': c['session_time'],
+              'session_location': c['session_location'],
+              'credit_hours': c['credit_hours'],
+              'instructor_name': c['instructor_name'] ?? 'N/A',
+            });
+
+            course.absents = await fetchAbsents(
+              studentId,
+              course.courseName,
+              course.sessionNum,
+            );
+
+            loadedCourses.add(course);
+          }
 
           setState(() {
             courses = loadedCourses;
@@ -110,6 +119,36 @@ class _StudentHomePageState extends State<StudentHomePage> {
         print("Error loading courses: $e");
       }
       setState(() => isLoading = false);
+    }
+  }
+
+  Future<String> fetchAbsents(String studentId, String courseName, String sessionNum) async {
+    try {
+      final url = Uri.parse('https://my-attendance-1.onrender.com/absents/count');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'student_id': studentId,
+          'course_name': courseName,
+          'session_number': int.parse(sessionNum),
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['absents'].toString();
+      } else {
+        if (kDebugMode) {
+          print('Failed to fetch absents for $courseName: ${response.statusCode}');
+        }
+        return "0";
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error fetching absents: $e");
+      }
+      return "0";
     }
   }
 
@@ -196,7 +235,6 @@ class _StudentHomePageState extends State<StudentHomePage> {
             onPressed: () async {
               final prefs = await SharedPreferences.getInstance();
               final studentId = prefs.getString('userId');
-
               if (studentId == null) return;
 
               final scannedCode = await Navigator.push(
@@ -297,10 +335,7 @@ class CourseCard extends StatelessWidget {
           child: Text(
             label,
             textAlign: TextAlign.center,
-            style: GoogleFonts.jost(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: GoogleFonts.jost(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
         Padding(
@@ -308,10 +343,7 @@ class CourseCard extends StatelessWidget {
           child: Text(
             value,
             textAlign: TextAlign.center,
-            style: GoogleFonts.jost(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: GoogleFonts.jost(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
       ],
@@ -342,9 +374,7 @@ class AbsenceButton extends StatelessWidget {
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF0961F5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(30),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
           ),
           onPressed: () {
             Navigator.push(
@@ -352,23 +382,18 @@ class AbsenceButton extends StatelessWidget {
               MaterialPageRoute(
                 builder: (context) => AbsentsPage(
                   courseTitle: courseName,
-                  sessionNum: int.parse(sessionNum),    // convert to int
-                  studentId: studentId,      // convert to int
+                  sessionNum: int.parse(sessionNum),
+                  studentId: studentId,
                 ),
               ),
             );
-
           },
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 "Absents",
-                style: GoogleFonts.jost(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                style: GoogleFonts.jost(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
               ),
               const SizedBox(width: 10),
               CircleAvatar(
@@ -376,11 +401,7 @@ class AbsenceButton extends StatelessWidget {
                 radius: 14,
                 child: Text(
                   absents,
-                  style: GoogleFonts.jost(
-                    color: const Color(0xFF0961F5),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  style: GoogleFonts.jost(color: Color(0xFF0961F5), fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ),
             ],
