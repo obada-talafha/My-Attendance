@@ -18,7 +18,7 @@ class Course {
   final String hall;
   final String creditHours;
   final String instructor;
-  String absents; // updated dynamically
+  final String absents;
 
   Course({
     required this.courseName,
@@ -32,16 +32,17 @@ class Course {
     this.absents = "0",
   });
 
-  factory Course.fromJson(Map<String, dynamic> json) {
+  factory Course.fromJson(Map<String, dynamic> json, String studentId) {
     return Course(
       courseName: json['course_name'],
       sessionNum: json['session_number'].toString(),
-      studentId: json['student_id'].toString(),
+      studentId: studentId,
       days: json['days'],
       time: json['session_time'],
       hall: json['session_location'],
       creditHours: json['credit_hours'].toString(),
       instructor: json['instructor_name'] ?? 'N/A',
+      absents: json['absents'].toString(),
     );
   }
 }
@@ -84,23 +85,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
           final List<Course> loadedCourses = [];
 
           for (var c in data) {
-            final course = Course.fromJson({
-              'course_name': c['course_name'],
-              'session_number': c['session_number'],
-              'student_id': studentId,
-              'days': c['days'],
-              'session_time': c['session_time'],
-              'session_location': c['session_location'],
-              'credit_hours': c['credit_hours'],
-              'instructor_name': c['instructor_name'] ?? 'N/A',
-            });
-
-            course.absents = await fetchAbsents(
-              studentId,
-              course.courseName,
-              course.sessionNum,
-            );
-
+            final course = Course.fromJson(c, studentId);
             loadedCourses.add(course);
           }
 
@@ -119,36 +104,6 @@ class _StudentHomePageState extends State<StudentHomePage> {
         print("Error loading courses: $e");
       }
       setState(() => isLoading = false);
-    }
-  }
-
-  Future<String> fetchAbsents(String studentId, String courseName, String sessionNum) async {
-    try {
-      final url = Uri.parse('https://my-attendance-1.onrender.com/absents/count');
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'student_id': studentId,
-          'course_name': courseName,
-          'session_number': int.parse(sessionNum),
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data['absents'].toString();
-      } else {
-        if (kDebugMode) {
-          print('Failed to fetch absents for $courseName: ${response.statusCode}');
-        }
-        return "0";
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("Error fetching absents: $e");
-      }
-      return "0";
     }
   }
 
@@ -208,21 +163,26 @@ class _StudentHomePageState extends State<StudentHomePage> {
           final isSmallScreen = constraints.maxWidth < 600;
           return Padding(
             padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8 : 24),
-            child: ListView.builder(
-              itemCount: courses.length,
-              itemBuilder: (context, index) {
-                final course = courses[index];
-                return TweenAnimationBuilder(
-                  tween: Tween<double>(begin: 0.9, end: 1),
-                  duration: Duration(milliseconds: 500 + index * 150),
-                  curve: Curves.easeOut,
-                  builder: (context, value, child) {
-                    return Transform.scale(scale: value, child: child);
+              child: RefreshIndicator(
+                onRefresh: loadCourses,
+                child: ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: courses.length,
+                  itemBuilder: (context, index) {
+                    final course = courses[index];
+                    return TweenAnimationBuilder(
+                      tween: Tween<double>(begin: 0.9, end: 1),
+                      duration: Duration(milliseconds: 500 + index * 150),
+                      curve: Curves.easeOut,
+                      builder: (context, value, child) {
+                        return Transform.scale(scale: value, child: child);
+                      },
+                      child: CourseCard(course: course),
+                    );
                   },
-                  child: CourseCard(course: course),
-                );
-              },
-            ),
+                ),
+              ),
+
           );
         },
       ),
