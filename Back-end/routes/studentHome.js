@@ -15,7 +15,7 @@ const getStudentCourses = async (req, res) => {
   }
 
   try {
-    // Step 1: Get enrolled courses and absence counts
+    // Step 1: Get enrolled courses and absence counts directly from attendance
     const coursesResult = await pool.query(
       `SELECT
          c.course_name,
@@ -29,14 +29,13 @@ const getStudentCourses = async (req, res) => {
        JOIN course c ON e.course_name = c.course_name AND e.session_number = c.session_number
        LEFT JOIN (
          SELECT
-           qs.course_name,
-           qs.session_number,
-           a.student_id,
+           student_id,
+           course_name,
+           session_number,
            COUNT(*) AS absents
-         FROM attendance a
-         JOIN qr_session qs ON a.session_id = qs.session_id
-         WHERE a.is_present = FALSE
-         GROUP BY qs.course_name, qs.session_number, a.student_id
+         FROM attendance
+         WHERE is_present = FALSE
+         GROUP BY student_id, course_name, session_number
        ) a ON a.student_id = e.student_id
             AND a.course_name = e.course_name
             AND a.session_number = e.session_number
