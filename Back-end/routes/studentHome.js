@@ -1,19 +1,21 @@
 import pool from '../db/index.js';
 
-// Updated 1/6/2025 
+// Updated 7/6/2025
 
 const getStudentCourses = async (req, res) => {
-const student_id = parseInt(req.query.student_id);
+  // Parse student_id to integer
+  const student_id = parseInt(req.query.student_id, 10);
 
-if (isNaN(student_id)) {
-  return res.status(400).json({
-    success: false,
-    message: "Invalid student_id",
-  });
-}
+  // Validate parsed ID
+  if (isNaN(student_id)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid student_id",
+    });
+  }
 
   try {
-    // Step 1: Get enrolled courses and absence counts (adjusted for session_id mapping)
+    // Step 1: Get enrolled courses and absence counts
     const coursesResult = await pool.query(
       `SELECT
          c.course_name,
@@ -27,20 +29,20 @@ if (isNaN(student_id)) {
        JOIN course c ON e.course_name = c.course_name AND e.session_number = c.session_number
        LEFT JOIN (
          SELECT
-           course_name,
-           session_number,
-           student_id,
+           qs.course_name,
+           qs.session_number,
+           a.student_id,
            COUNT(*) AS absents
-         FROM attendance
-         WHERE is_present = FALSE
-         GROUP BY course_name, session_number, student_id
+         FROM attendance a
+         JOIN qr_session qs ON a.session_id = qs.session_id
+         WHERE a.is_present = FALSE
+         GROUP BY qs.course_name, qs.session_number, a.student_id
        ) a ON a.student_id = e.student_id
             AND a.course_name = e.course_name
             AND a.session_number = e.session_number
        WHERE e.student_id = $1`,
       [student_id]
     );
-
 
     const courses = coursesResult.rows;
 
@@ -70,6 +72,7 @@ if (isNaN(student_id)) {
       course.instructor_name = instructor?.instructor_name ?? null;
     }
 
+    // Return final result
     return res.status(200).json({
       success: true,
       courses,
