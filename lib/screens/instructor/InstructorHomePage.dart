@@ -111,32 +111,7 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
           Expanded(
             child: Column(
               children: [
-                if (!isSmallScreen)
-                  Container(
-                    height: 60,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    alignment: Alignment.centerRight,
-                    child: Stack(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.notifications_none, color: Colors.black87),
-                          onPressed: () {},
-                        ),
-                        Positioned(
-                          right: 11,
-                          top: 11,
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                // Removed notification icon section entirely
                 Expanded(
                   child: isLoading
                       ? const Center(child: CircularProgressIndicator())

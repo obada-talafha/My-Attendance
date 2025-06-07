@@ -5,7 +5,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'student_drawer.dart';
 import 'absents_page.dart';
-import 'student_notifications_page.dart';
 import 'qr_scan_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -124,18 +123,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
             fontSize: 20,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => StudentNotificationsPage()),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
+        actions: const [], // Removed notification button
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -163,26 +151,25 @@ class _StudentHomePageState extends State<StudentHomePage> {
           final isSmallScreen = constraints.maxWidth < 600;
           return Padding(
             padding: EdgeInsets.symmetric(horizontal: isSmallScreen ? 8 : 24),
-              child: RefreshIndicator(
-                onRefresh: loadCourses,
-                child: ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  itemCount: courses.length,
-                  itemBuilder: (context, index) {
-                    final course = courses[index];
-                    return TweenAnimationBuilder(
-                      tween: Tween<double>(begin: 0.9, end: 1),
-                      duration: Duration(milliseconds: 500 + index * 150),
-                      curve: Curves.easeOut,
-                      builder: (context, value, child) {
-                        return Transform.scale(scale: value, child: child);
-                      },
-                      child: CourseCard(course: course),
-                    );
-                  },
-                ),
+            child: RefreshIndicator(
+              onRefresh: loadCourses,
+              child: ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: courses.length,
+                itemBuilder: (context, index) {
+                  final course = courses[index];
+                  return TweenAnimationBuilder(
+                    tween: Tween<double>(begin: 0.9, end: 1),
+                    duration: Duration(milliseconds: 500 + index * 150),
+                    curve: Curves.easeOut,
+                    builder: (context, value, child) {
+                      return Transform.scale(scale: value, child: child);
+                    },
+                    child: CourseCard(course: course),
+                  );
+                },
               ),
-
+            ),
           );
         },
       ),
@@ -197,7 +184,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
               final studentId = prefs.getString('userId');
               if (studentId == null) return;
 
-              final scannedCode = await Navigator.push(
+              await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => QRScanPage(studentId: studentId)),
               );
@@ -367,6 +354,6 @@ class AbsenceButton extends StatelessWidget {
           ),
         ),
       ),
-    );;
+    );
   }
 }
