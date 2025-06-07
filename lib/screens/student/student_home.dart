@@ -367,6 +367,6 @@ class AbsenceButton extends StatelessWidget {
           ),
         ),
       ),
-    );
+    );;
   }
 }
