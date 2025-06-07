@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:http/http.dart' as http;
 
+import 'FaceScanPage.dart'; // Make sure this file exists
+
 class QRScanPage extends StatefulWidget {
   final String studentId;
 
@@ -16,8 +18,8 @@ class _QRScanPageState extends State<QRScanPage> {
   late MobileScannerController controller;
   double zoomLevel = 0.0;
   bool isProcessing = false;
-  bool canScan = false; // Control scanning start after delay
-  String scannedCode = ''; // To show scanned QR code value on screen
+  bool canScan = false;
+  String scannedCode = '';
 
   @override
   void initState() {
@@ -27,7 +29,6 @@ class _QRScanPageState extends State<QRScanPage> {
       facing: CameraFacing.back,
     );
 
-    // Wait 2 seconds before enabling scanning
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
@@ -47,11 +48,10 @@ class _QRScanPageState extends State<QRScanPage> {
 
       if (rawCode != null) {
         setState(() {
-          scannedCode = rawCode; // Update UI with scanned QR code
+          scannedCode = rawCode;
           isProcessing = true;
         });
 
-        // Stop scanning shortly after detection
         await Future.delayed(const Duration(milliseconds: 500));
         await controller.stop();
 
@@ -61,7 +61,6 @@ class _QRScanPageState extends State<QRScanPage> {
         print('Student ID: ${widget.studentId}');
 
         try {
-          // Decode Base64 and parse JSON
           final decoded = utf8.decode(base64Decode(rawCode));
           final Map<String, dynamic> qrData = jsonDecode(decoded);
 
@@ -83,7 +82,19 @@ class _QRScanPageState extends State<QRScanPage> {
 
           if (response.statusCode == 200) {
             final result = jsonDecode(response.body);
-            _showMessage(result['message'] ?? 'Attendance marked!');
+
+            // Navigate to FaceScanPage after success
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FaceScanPage(
+                    studentId: widget.studentId,
+                    qrData: qrData,
+                  ),
+                ),
+              );
+            }
           } else {
             try {
               final errorResult = jsonDecode(response.body);
@@ -96,10 +107,6 @@ class _QRScanPageState extends State<QRScanPage> {
           print('Error processing QR or server response: $e');
           _showMessage('Invalid QR code or server error');
         }
-
-        Future.delayed(const Duration(seconds: 1), () {
-          if (mounted) Navigator.pop(context);
-        });
       }
     }
   }
@@ -141,8 +148,6 @@ class _QRScanPageState extends State<QRScanPage> {
             controller: controller,
             onDetect: _onDetect,
           ),
-
-          // Center overlay box for aiming
           Center(
             child: Container(
               width: 250,
@@ -154,8 +159,6 @@ class _QRScanPageState extends State<QRScanPage> {
               ),
             ),
           ),
-
-          // Zoom slider & label at bottom
           Positioned(
             bottom: 24,
             left: 16,
