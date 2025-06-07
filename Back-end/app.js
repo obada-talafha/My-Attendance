@@ -8,7 +8,6 @@ import { loginStudent, loginAdmin, loginInstructor } from './routes/auth.js';
 import { getStudentProfile } from './routes/studentController.js';
 import { getStudentCourses } from './routes/studentHome.js';
 import studentAbsencesRoute from './routes/getStudentAbsences.js';
-import absentCountRoute from './routes/absentCount.js';
 // Instructor routes
 import { getInstructorHome } from './routes/instructorHome.js';
 import { getInstructorProfile } from './routes/instructorProfile.js';
@@ -42,7 +41,6 @@ app.post('/loginInstructor', loginInstructor);
 app.get('/studentHome', getStudentCourses);
 app.get('/studentProfile', getStudentProfile);
 app.use('/student-absences', studentAbsencesRoute);
-app.use('/api', absentCountRoute);
 // 👨‍🏫 Instructor
 app.get('/instructorHome', getInstructorHome);
 app.get('/instructorProfile', getInstructorProfile);
