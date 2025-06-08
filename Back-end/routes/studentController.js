@@ -5,7 +5,7 @@ const getStudentProfile = async (req, res) => {
 
     try {
       const result = await pool.query(
-        'SELECT name, student_id, email, birthdate, major, academiclvl, status FROM "student" WHERE "student_id" = $1',
+        'SELECT name, student_id, email, birthdate, major, academiclvl,image status FROM "student" WHERE "student_id" = $1',
         [student_id]
       );
 

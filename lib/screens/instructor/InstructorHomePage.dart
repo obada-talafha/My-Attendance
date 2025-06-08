@@ -105,42 +105,40 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
       ),
       elevation: 3,
       child: Padding(
-        padding: EdgeInsets.all(paddingValue).copyWith(bottom: paddingValue / 2),
+        padding: EdgeInsets.all(paddingValue),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,  // important to avoid expanding beyond needed
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Column(
-              children: [
-                Text(
-                  course["course_name"] ?? "",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.jost(
-                    fontSize: titleSize,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Divider(thickness: 1),
-                Table(
-                  border: TableBorder.symmetric(
-                    inside: const BorderSide(
-                      color: Color(0xFFE0E0E0),
-                      width: 0.6,
-                    ),
-                  ),
-                  columnWidths: const {
-                    0: FlexColumnWidth(2),
-                    1: FlexColumnWidth(3),
-                  },
-                  children: [
-                    buildTableRow("Section", course["session_number"]?.toString() ?? "", tableFontSize),
-                    buildTableRow("Time", course["session_time"] ?? "", tableFontSize),
-                    buildTableRow("Days", course["days"] ?? "", tableFontSize),
-                  ],
-                ),
-              ],
+            Text(
+              course["course_name"] ?? "",
+              textAlign: TextAlign.center,
+              style: GoogleFonts.jost(
+                fontSize: titleSize,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            const SizedBox(height: 8),
+            const Divider(thickness: 1),
+            Flexible(  // Flexible helps prevent overflow by letting table shrink if needed
+              child: Table(
+                border: TableBorder.symmetric(
+                  inside: const BorderSide(
+                    color: Color(0xFFE0E0E0),
+                    width: 0.6,
+                  ),
+                ),
+                columnWidths: const {
+                  0: FlexColumnWidth(2),
+                  1: FlexColumnWidth(3),
+                },
+                children: [
+                  buildTableRow("Section", course["session_number"]?.toString() ?? "", tableFontSize),
+                  buildTableRow("Time", course["session_time"] ?? "", tableFontSize),
+                  buildTableRow("Days", course["days"] ?? "", tableFontSize),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
             Align(
               alignment: Alignment.center,
               child: ElevatedButton(

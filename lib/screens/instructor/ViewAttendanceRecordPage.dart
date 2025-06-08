@@ -43,7 +43,7 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     });
 
     final url = Uri.parse(
-      'https://my-attendance-1.onrender.com/ViewAttendanceRecord/${Uri.encodeComponent(widget.courseTitle)}/${widget.sessionNumber}',
+      'https://my-attendance-1.onrender.com/ViewAttendanceRecord/${widget.courseTitle}/${widget.sessionNumber}/${widget.selectedDate}',
     );
 
     try {
@@ -257,34 +257,42 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
               ),
             ),
             const SizedBox(height: 10),
-            Expanded(
-              child: filteredStudents.isEmpty
-                  ? Center(
-                child: Text(
-                  'No students found.',
-                  style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
-                ),
-              )
-                  : SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Table(
-                    border: TableBorder.all(color: const Color(0xFFE8F1FF)),
-                    columnWidths: const {
-                      0: FlexColumnWidth(1),
-                      1: FlexColumnWidth(3),
-                      2: FlexColumnWidth(2),
-                      3: FlexColumnWidth(2),
-                      4: FlexColumnWidth(2),
-                    },
-                    children: [
-                      _buildTableHeader(),
-                      for (var student in filteredStudents) _buildTableRow(student),
-                    ],
-                  ),
-                ),
-              ),
+      Expanded(
+        child: filteredStudents.isEmpty
+            ? Center(
+          child: Text(
+            'No absence record for this day.',
+            style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
+          ),
+        )
+            : filteredStudents.every((s) => s['isPresent'] == true)
+            ? Center(
+          child: Text(
+            'No absence record for this day.',
+            style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
+          ),
+        )
+            : SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Table(
+              border: TableBorder.all(color: const Color(0xFFE8F1FF)),
+              columnWidths: const {
+                0: FlexColumnWidth(1),
+                1: FlexColumnWidth(3),
+                2: FlexColumnWidth(2),
+                3: FlexColumnWidth(2),
+                4: FlexColumnWidth(2),
+              },
+              children: [
+                _buildTableHeader(),
+                for (var student in filteredStudents) _buildTableRow(student),
+              ],
             ),
+          ),
+        ),
+      ),
+
           ],
         ),
       ),

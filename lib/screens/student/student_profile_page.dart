@@ -108,9 +108,16 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            const CircleAvatar(
-              radius: 60,
-            ),
+          CircleAvatar(
+          radius: 60,
+            backgroundImage: student!['image'] != null
+                ? MemoryImage(base64Decode(student!['image'].split(',').last))
+                : null,
+          child: student!['image'] == null
+              ? const Icon(Icons.person, size: 60)
+              : null,
+        ),
+
             const SizedBox(height: 20),
             Text(
               student!['name'] ?? '',
