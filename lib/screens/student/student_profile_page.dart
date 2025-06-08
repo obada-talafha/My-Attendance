@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 
 class StudentProfilePage extends StatefulWidget {
   const StudentProfilePage({super.key});
@@ -14,6 +15,7 @@ class StudentProfilePage extends StatefulWidget {
 
 class _StudentProfilePageState extends State<StudentProfilePage> {
   Map<String, dynamic>? student;
+  Uint8List? imageBytes;
   bool isLoading = true;
 
   @override
@@ -27,23 +29,33 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
     final studentId = prefs.getString('userId');
 
     if (studentId == null) {
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
       return;
     }
 
-    final url = Uri.parse(
-      'https://my-attendance-1.onrender.com/studentProfile?student_id=$studentId',
-    );
-
     try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['student'] != null) {
+      // Fetch profile
+      final profileUrl = Uri.parse(
+        'https://my-attendance-1.onrender.com/studentProfile?student_id=$studentId',
+      );
+      final profileResponse = await http.get(profileUrl);
+
+      if (profileResponse.statusCode == 200) {
+        final profileData = jsonDecode(profileResponse.body);
+        student = profileData['student'];
+
+        // Fetch image
+        final imageUrl = Uri.parse(
+          'https://my-attendance-1.onrender.com/studentImage?student_id=$studentId',
+        );
+        final imageResponse = await http.get(imageUrl);
+
+        if (imageResponse.statusCode == 200) {
+          final imageData = jsonDecode(imageResponse.body);
+          final base64Image = imageData['image'];
+          final decoded = base64Decode(base64Image.split(',').last);
           setState(() {
-            student = data['student'];
+            imageBytes = decoded;
             isLoading = false;
           });
         } else {
@@ -53,6 +65,7 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         setState(() => isLoading = false);
       }
     } catch (e) {
+      print('Error: $e');
       setState(() => isLoading = false);
     }
   }
@@ -108,16 +121,14 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-          CircleAvatar(
-          radius: 60,
-            backgroundImage: student!['image'] != null
-                ? MemoryImage(base64Decode(student!['image'].split(',').last))
-                : null,
-          child: student!['image'] == null
-              ? const Icon(Icons.person, size: 60)
-              : null,
-        ),
-
+            CircleAvatar(
+              radius: 60,
+              backgroundImage:
+              imageBytes != null ? MemoryImage(imageBytes!) : null,
+              child: imageBytes == null
+                  ? const Icon(Icons.person, size: 60)
+                  : null,
+            ),
             const SizedBox(height: 20),
             Text(
               student!['name'] ?? '',
@@ -139,8 +150,8 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
               children: [
                 buildTableRow('ID', student!['student_id']),
                 buildTableRow('Email', student!['email']),
-                buildTableRow(
-                    'Birth Date', formatDate(student!['birthdate'])),
+                buildTableRow('Birth Date',
+                    formatDate(student!['birthdate'])),
                 buildTableRow('Major', student!['major']),
                 buildTableRow('Academic Lvl',
                     student!['academiclvl']?.toString()),

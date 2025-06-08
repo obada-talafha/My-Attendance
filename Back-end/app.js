@@ -5,9 +5,11 @@ import cors from 'cors';
 import { loginStudent, loginAdmin, loginInstructor } from './routes/auth.js';
 
 // Student routes
-import { getStudentProfile } from './routes/studentController.js';
+import { getStudentProfile } from './routes/studentProfile.js'; // ✅ renamed for clarity
+import { getStudentImage } from './routes/studentProfile.js';   // ✅ image route added
 import { getStudentCourses } from './routes/studentHome.js';
 import studentAbsencesRoute from './routes/getStudentAbsences.js';
+
 // Instructor routes
 import { getInstructorHome } from './routes/instructorHome.js';
 import { getInstructorProfile } from './routes/instructorProfile.js';
@@ -41,7 +43,9 @@ app.post('/loginInstructor', loginInstructor);
 // 🎓 Student
 app.get('/studentHome', getStudentCourses);
 app.get('/studentProfile', getStudentProfile);
+app.get('/studentImage', getStudentImage); // ✅ NEW ROUTE ADDED
 app.use('/student-absences', studentAbsencesRoute);
+
 // 👨‍🏫 Instructor
 app.get('/instructorHome', getInstructorHome);
 app.get('/instructorProfile', getInstructorProfile);
