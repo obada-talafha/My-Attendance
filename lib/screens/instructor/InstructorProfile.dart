@@ -51,6 +51,20 @@ class _InstructorProfileState extends State<InstructorProfile> {
   }
 
   TableRow buildTableRow(String label, dynamic value) {
+    String displayValue;
+
+    if (label == 'Birth Date' && value != null) {
+      try {
+        final parsedDate = DateTime.parse(value);
+        displayValue =
+        '${parsedDate.year}-${parsedDate.month.toString().padLeft(2, '0')}-${parsedDate.day.toString().padLeft(2, '0')}';
+      } catch (e) {
+        displayValue = value.toString();
+      }
+    } else {
+      displayValue = value?.toString() ?? '';
+    }
+
     return TableRow(
       children: [
         Padding(
@@ -64,7 +78,7 @@ class _InstructorProfileState extends State<InstructorProfile> {
         Padding(
           padding: const EdgeInsets.all(10),
           child: Text(
-            value?.toString() ?? '',
+            displayValue,
             textAlign: TextAlign.center,
             style: GoogleFonts.jost(fontSize: 18, fontWeight: FontWeight.bold),
           ),
@@ -100,12 +114,14 @@ class _InstructorProfileState extends State<InstructorProfile> {
               radius: 60,
               backgroundImage: instructor!['image'] != null
                   ? NetworkImage(instructor!['image'])
-                  : const AssetImage('asset/profile_pic.png') as ImageProvider,
+                  : const AssetImage('asset/profile_pic.png')
+              as ImageProvider,
             ),
             const SizedBox(height: 20),
             Text(
               instructor!['name'] ?? '',
-              style: GoogleFonts.jost(fontSize: 22, fontWeight: FontWeight.bold),
+              style: GoogleFonts.jost(
+                  fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
             Table(
@@ -113,7 +129,8 @@ class _InstructorProfileState extends State<InstructorProfile> {
                 color: Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(10),
               ),
-              defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+              defaultVerticalAlignment:
+              TableCellVerticalAlignment.middle,
               columnWidths: const {
                 0: FlexColumnWidth(2),
                 1: FlexColumnWidth(3),
