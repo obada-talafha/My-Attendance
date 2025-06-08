@@ -54,7 +54,9 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
               "name": student["student_name"],
               "stNo": id,
               "absNo": student["absence_count"] ?? 0,
-              "isPresent": student["is_present"],
+              "status": student["is_present"] == null
+                  ? 'unknown'
+                  : (student["is_present"] == true ? 'present' : 'absent'),
             });
           }
         }
@@ -97,10 +99,13 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
       "course_name": widget.courseTitle,
       "session_number": widget.sessionNumber,
       "session_date": DateFormat('yyyy-MM-dd').format(widget.selectedDate),
-      "students": students.map((s) => {
+      "students": students
+          .where((s) => s["status"] != 'unknown')
+          .map((s) => {
         "student_id": s["stNo"],
-        "is_present": s["isPresent"],
-      }).toList(),
+        "is_present": s["status"] == 'present',
+      })
+          .toList(),
     };
 
     try {
@@ -131,7 +136,6 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
             ),
           );
         }
-
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -151,14 +155,20 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
     }
   }
 
-  void markAll(bool present) {
+  void markAll(String status) {
     setState(() {
       for (var s in students) {
-        final wasPresent = s["isPresent"];
-        if (wasPresent != present) {
+        final current = s["status"];
+        if (status == 'present' && current != 'present') {
           int abs = int.tryParse(s["absNo"].toString()) ?? 0;
-          s["absNo"] = present ? (abs > 0 ? abs - 1 : 0) : abs + 1;
-          s["isPresent"] = present;
+          s["absNo"] = abs > 0 ? abs - 1 : 0;
+          s["status"] = 'present';
+        } else if (status == 'absent' && current != 'absent') {
+          int abs = int.tryParse(s["absNo"].toString()) ?? 0;
+          s["absNo"] = abs + 1;
+          s["status"] = 'absent';
+        } else if (status == 'unknown') {
+          s["status"] = 'unknown';
         }
       }
 
@@ -169,6 +179,22 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         return name.contains(q) || stNo.contains(q);
       }).toList();
 
+      hasChanges = true;
+    });
+  }
+
+  void cycleStatus(Map<String, dynamic> s) {
+    setState(() {
+      final abs = int.tryParse(s["absNo"].toString()) ?? 0;
+      if (s["status"] == 'present') {
+        s["status"] = 'absent';
+        s["absNo"] = abs + 1;
+      } else if (s["status"] == 'absent') {
+        s["status"] = 'unknown';
+        s["absNo"] = abs > 0 ? abs - 1 : 0;
+      } else {
+        s["status"] = 'present';
+      }
       hasChanges = true;
     });
   }
@@ -195,12 +221,17 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
           IconButton(
             icon: const Icon(Icons.check_circle, color: Colors.green),
             tooltip: "Mark All Present",
-            onPressed: () => markAll(true),
+            onPressed: () => markAll('present'),
           ),
           IconButton(
             icon: const Icon(Icons.cancel, color: Colors.redAccent),
             tooltip: "Mark All Absent",
-            onPressed: () => markAll(false),
+            onPressed: () => markAll('absent'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.remove_circle_outline, color: Colors.grey),
+            tooltip: "Clear All",
+            onPressed: () => markAll('unknown'),
           ),
           IconButton(
             icon: const Icon(Icons.save, color: Colors.blue),
@@ -274,11 +305,27 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
   TableRow _buildTableRow(Map<String, dynamic> s) {
     final abs = int.tryParse(s["absNo"].toString()) ?? 0;
     Color? bgColor;
-
     if (abs >= 10) {
       bgColor = Colors.redAccent.withOpacity(0.3);
     } else if (abs >= 9) {
       bgColor = Colors.yellowAccent.withOpacity(0.3);
+    }
+
+    Color statusColor;
+    Icon statusIcon;
+
+    switch (s["status"]) {
+      case 'present':
+        statusColor = Colors.green;
+        statusIcon = const Icon(Icons.check, color: Colors.white);
+        break;
+      case 'absent':
+        statusColor = Colors.redAccent;
+        statusIcon = const Icon(Icons.close, color: Colors.white);
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusIcon = const Icon(Icons.help_outline, color: Colors.white);
     }
 
     return TableRow(
@@ -289,23 +336,14 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         _buildCell(s["stNo"]),
         _buildCell(s["absNo"].toString()),
         Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-          child: Switch(
-            value: s["isPresent"],
-            onChanged: (bool value) {
-              setState(() {
-                final abs = int.tryParse(s["absNo"].toString()) ?? 0;
-                if (value && !s["isPresent"]) {
-                  s["absNo"] = abs > 0 ? abs - 1 : 0;
-                } else if (!value && s["isPresent"]) {
-                  s["absNo"] = abs + 1;
-                }
-                s["isPresent"] = value;
-                hasChanges = true;
-              });
-            },
-            activeColor: Colors.green,
-            inactiveTrackColor: Colors.redAccent,
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+          child: InkWell(
+            onTap: () => cycleStatus(s),
+            child: CircleAvatar(
+              backgroundColor: statusColor,
+              radius: 14,
+              child: statusIcon,
+            ),
           ),
         ),
       ],
