@@ -4,12 +4,28 @@ import pool from '../db/index.js';
 const ViewAttendanceRecord = express.Router();
 
 /**
- * GET students and their attendance info for a given course and session
+ * GET students and their attendance info for a given course, session, and date
  */
-ViewAttendanceRecord.get('/:courseName/:sessionNumber', async (req, res) => {
-  const { courseName, sessionNumber } = req.params;
+ViewAttendanceRecord.get('/:courseName/:sessionNumber/:sessionDate', async (req, res) => {
+  const { courseName, sessionNumber, sessionDate } = req.params;
 
   try {
+    // Step 1: Check if any records exist for this session and date
+    const attendanceExists = await pool.query(
+      `
+      SELECT COUNT(*) AS count
+      FROM attendance
+      WHERE course_name = $1 AND session_number = $2::int AND session_date = $3
+      `,
+      [courseName, sessionNumber, sessionDate]
+    );
+
+    const count = parseInt(attendanceExists.rows[0].count, 10);
+    if (count === 0) {
+      return res.status(200).json([]); // Let frontend display "No attendance record for this day."
+    }
+
+    // Step 2: Return all enrolled students and their status for this day
     const studentsQuery = `
       SELECT
         s.student_id,
@@ -27,15 +43,15 @@ ViewAttendanceRecord.get('/:courseName/:sessionNumber', async (req, res) => {
       LEFT JOIN (
         SELECT student_id, is_present
         FROM attendance
-        WHERE course_name = $1 AND session_number = $2::int
+        WHERE course_name = $1 AND session_number = $2::int AND session_date = $3
       ) a_session ON a_session.student_id = s.student_id
       WHERE e.course_name = $1 AND e.session_number::int = $2::int
     `;
 
-    const { rows } = await pool.query(studentsQuery, [courseName, sessionNumber]);
+    const { rows } = await pool.query(studentsQuery, [courseName, sessionNumber, sessionDate]);
     res.status(200).json(rows);
   } catch (error) {
-    console.error('Error fetching students for manual attendance:', error);
+    console.error('Error fetching attendance records:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -53,15 +69,14 @@ ViewAttendanceRecord.post('/save', async (req, res) => {
     // Step 1: Check if any attendance records exist for the session on that date
     const existingRecordsCheck = await pool.query(
       `
-        SELECT COUNT(*) AS count
-        FROM attendance
-        WHERE course_name = $1 AND session_number = $2::int AND session_date = $3
+      SELECT COUNT(*) AS count
+      FROM attendance
+      WHERE course_name = $1 AND session_number = $2::int AND session_date = $3
       `,
       [course_name, session_number, session_date]
     );
 
     const recordCount = parseInt(existingRecordsCheck.rows[0].count, 10);
-
     if (recordCount === 0) {
       return res.status(404).json({
         message: 'No attendance records found for this session on the selected date.'
@@ -74,9 +89,9 @@ ViewAttendanceRecord.post('/save', async (req, res) => {
 
       await pool.query(
         `
-          UPDATE attendance
-          SET is_present = $1, marked_at = NOW()
-          WHERE course_name = $2 AND session_number = $3::int AND student_id = $4 AND session_date = $5
+        UPDATE attendance
+        SET is_present = $1, marked_at = NOW()
+        WHERE course_name = $2 AND session_number = $3::int AND student_id = $4 AND session_date = $5
         `,
         [is_present, course_name, session_number, student_id, session_date]
       );

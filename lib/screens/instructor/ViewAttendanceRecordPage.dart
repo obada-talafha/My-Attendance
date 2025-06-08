@@ -25,6 +25,7 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
   List<Map<String, dynamic>> filteredStudents = [];
   bool isLoading = true;
   bool hasChanges = false;
+  bool isSaving = false;
   String searchQuery = '';
 
   @override
@@ -33,9 +34,16 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     fetchStudents();
   }
 
+  // Fetch students attendance from backend API
   Future<void> fetchStudents() async {
+    setState(() {
+      isLoading = true;
+      hasChanges = false;
+      isSaving = false;
+    });
+
     final url = Uri.parse(
-      'https://my-attendance-1.onrender.com/ViewAttendanceRecord/${widget.courseTitle}/${widget.sessionNumber}',
+      'https://my-attendance-1.onrender.com/ViewAttendanceRecord/${Uri.encodeComponent(widget.courseTitle)}/${widget.sessionNumber}',
     );
 
     try {
@@ -51,17 +59,17 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
             addedIds.add(id);
             uniqueStudents.add({
               "no": (uniqueStudents.length + 1).toString().padLeft(2, '0'),
-              "name": student["student_name"],
+              "name": student["student_name"] ?? '',
               "stNo": id,
               "absNo": student["absence_count"] ?? 0,
-              "isPresent": student["is_present"],
+              "isPresent": student["is_present"] ?? false,
             });
           }
         }
 
         setState(() {
           students = uniqueStudents;
-          filteredStudents = List.from(uniqueStudents);
+          filteredStudents = _filterStudentsList(uniqueStudents, searchQuery);
           isLoading = false;
         });
       } else {
@@ -79,19 +87,33 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     }
   }
 
+  // Filters the list based on query
+  List<Map<String, dynamic>> _filterStudentsList(List<Map<String, dynamic>> list, String query) {
+    final q = query.toLowerCase();
+    if (q.isEmpty) return List.from(list);
+    return list.where((student) {
+      final name = student["name"].toString().toLowerCase();
+      final stNo = student["stNo"].toString().toLowerCase();
+      return name.contains(q) || stNo.contains(q);
+    }).toList();
+  }
+
+  // Called when user types in search box
   void filterStudents(String query) {
     setState(() {
       searchQuery = query;
-      filteredStudents = students.where((student) {
-        final name = student["name"].toString().toLowerCase();
-        final stNo = student["stNo"].toString().toLowerCase();
-        final q = query.toLowerCase();
-        return name.contains(q) || stNo.contains(q);
-      }).toList();
+      filteredStudents = _filterStudentsList(students, query);
     });
   }
 
+  // Save all attendance data to backend
   Future<void> updateAllAttendance() async {
+    if (!hasChanges || isSaving) return;
+
+    setState(() {
+      isSaving = true;
+    });
+
     final url = Uri.parse('https://my-attendance-1.onrender.com/ViewAttendanceRecord/save');
     final body = {
       "course_name": widget.courseTitle,
@@ -110,38 +132,37 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
         body: jsonEncode(body),
       );
 
-      if (response.statusCode == 200) {
-        final jsonBody = jsonDecode(response.body);
-        if (jsonBody["success"] == true || jsonBody["message"] == "Attendance saved successfully!") {
-          setState(() => hasChanges = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('✅ Attendance saved successfully!'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(" ${jsonBody['message'] ?? 'Unknown error'}"),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-      } else {
+      final jsonBody = jsonDecode(response.body);
+      if (response.statusCode == 200 && (jsonBody["success"] == true || jsonBody["message"] == "Attendance saved successfully!")) {
+        setState(() {
+          hasChanges = false;
+          isSaving = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("❌ Server error (Status: ${response.statusCode})"),
-            backgroundColor: Colors.red,
+            content: const Text('✅ Attendance saved successfully!'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      } else {
+        setState(() {
+          isSaving = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("⚠️ ${jsonBody['message'] ?? 'Unknown error'}"),
+            backgroundColor: Colors.orange,
           ),
         );
       }
     } catch (e) {
       print("❌ Error saving attendance: $e");
+      setState(() {
+        isSaving = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Network error: ${e.toString()}'),
@@ -151,24 +172,18 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     }
   }
 
+  // Mark all students present/absent
   void markAll(bool present) {
     setState(() {
       for (var s in students) {
-        final wasPresent = s["isPresent"];
+        final wasPresent = s["isPresent"] as bool? ?? false;
         if (wasPresent != present) {
           int abs = int.tryParse(s["absNo"].toString()) ?? 0;
           s["absNo"] = present ? (abs > 0 ? abs - 1 : 0) : abs + 1;
           s["isPresent"] = present;
         }
       }
-
-      filteredStudents = students.where((student) {
-        final name = student["name"].toString().toLowerCase();
-        final stNo = student["stNo"].toString().toLowerCase();
-        final q = searchQuery.toLowerCase();
-        return name.contains(q) || stNo.contains(q);
-      }).toList();
-
+      filteredStudents = _filterStudentsList(students, searchQuery);
       hasChanges = true;
     });
   }
@@ -195,67 +210,83 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
           IconButton(
             icon: const Icon(Icons.check_circle, color: Colors.green),
             tooltip: "Mark All Present",
-            onPressed: () => markAll(true),
+            onPressed: isLoading || isSaving ? null : () => markAll(true),
           ),
           IconButton(
             icon: const Icon(Icons.cancel, color: Colors.redAccent),
             tooltip: "Mark All Absent",
-            onPressed: () => markAll(false),
+            onPressed: isLoading || isSaving ? null : () => markAll(false),
           ),
           IconButton(
-            icon: const Icon(Icons.save, color: Colors.blue),
+            icon: isSaving
+                ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blue),
+            )
+                : const Icon(Icons.save, color: Colors.blue),
             tooltip: 'Save All',
-            onPressed: updateAllAttendance,
+            onPressed: hasChanges && !isSaving && !isLoading ? updateAllAttendance : null,
           ),
         ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              "${widget.courseTitle} | $dateStr",
-              style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search by name or ID',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onChanged: filterStudents,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Table(
-                  border: TableBorder.all(color: const Color(0xFFE8F1FF)),
-                  columnWidths: const {
-                    0: FlexColumnWidth(1),
-                    1: FlexColumnWidth(3),
-                    2: FlexColumnWidth(2),
-                    3: FlexColumnWidth(2),
-                    4: FlexColumnWidth(2),
-                  },
-                  children: [
-                    _buildTableHeader(),
-                    for (var student in filteredStudents) _buildTableRow(student),
-                  ],
-                ),
+          : RefreshIndicator(
+        onRefresh: fetchStudents,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                "${widget.courseTitle} | $dateStr",
+                style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
               ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search by name or ID',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onChanged: filterStudents,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: filteredStudents.isEmpty
+                  ? Center(
+                child: Text(
+                  'No students found.',
+                  style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
+                ),
+              )
+                  : SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Table(
+                    border: TableBorder.all(color: const Color(0xFFE8F1FF)),
+                    columnWidths: const {
+                      0: FlexColumnWidth(1),
+                      1: FlexColumnWidth(3),
+                      2: FlexColumnWidth(2),
+                      3: FlexColumnWidth(2),
+                      4: FlexColumnWidth(2),
+                    },
+                    children: [
+                      _buildTableHeader(),
+                      for (var student in filteredStudents) _buildTableRow(student),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -291,14 +322,18 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
           child: Switch(
-            value: s["isPresent"],
+            value: s["isPresent"] as bool? ?? false,
             onChanged: (bool newValue) {
               setState(() {
-                s['isPresent'] = newValue;
-                hasChanges = true;
+                final wasPresent = s["isPresent"] as bool? ?? false;
+                if (wasPresent != newValue) {
+                  int abs = int.tryParse(s["absNo"].toString()) ?? 0;
+                  s["absNo"] = newValue ? (abs > 0 ? abs - 1 : 0) : abs + 1;
+                  s["isPresent"] = newValue;
+                  hasChanges = true;
+                }
               });
             },
-
             activeColor: Colors.green,
             inactiveTrackColor: Colors.redAccent,
           ),
