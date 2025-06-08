@@ -137,6 +137,7 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                         builder: (context) => ViewAttendancePage(
                           courseTitle: widget.courseTitle,
                           selectedDate: selectedDate,
+                          sessionNumber: widget.sessionNumber,
                         ),
                       ),
                     );

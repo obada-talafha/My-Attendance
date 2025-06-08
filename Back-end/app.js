@@ -23,6 +23,7 @@ import endSessionRouter from './routes/endSession.js';
 
 // Manual attendance
 import { manualAttendanceRouter } from './routes/manualAttendance.js';
+import { ViewAttendanceRecord } from './routes/ViewAttendanceRecord.js';
 
 const app = express();
 
@@ -56,6 +57,7 @@ app.use(endSessionRouter);
 
 // ✍️ Manual Attendance
 app.use('/manual-attendance', manualAttendanceRouter);
+app.use('/ViewAttendanceRecord', ViewAttendanceRecord);
 
 // === SERVER START ===
 const PORT = 3000;
