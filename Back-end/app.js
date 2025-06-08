@@ -5,8 +5,8 @@ import cors from 'cors';
 import { loginStudent, loginAdmin, loginInstructor } from './routes/auth.js';
 
 // Student routes
-import { getStudentProfile } from './routes/studentProfile.js'; // ✅ renamed for clarity
-import { getStudentImage } from './routes/studentProfile.js';   // ✅ image route added
+import { getStudentProfile } from './routes/studentController.js'; // ✅ renamed for clarity
+import { getStudentImage } from './routes/studentController.js';   // ✅ image route added
 import { getStudentCourses } from './routes/studentHome.js';
 import studentAbsencesRoute from './routes/getStudentAbsences.js';
 
