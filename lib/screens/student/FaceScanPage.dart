@@ -72,7 +72,6 @@ class _FaceScanPageState extends State<FaceScanPage> {
 
       _showMessage(message);
     } catch (e) {
-      print("Error: $e");
       _showMessage('Failed to verify face.');
     } finally {
       if (mounted) {

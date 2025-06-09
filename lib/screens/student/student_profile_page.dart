@@ -65,7 +65,6 @@ class _StudentProfilePageState extends State<StudentProfilePage> {
         setState(() => isLoading = false);
       }
     } catch (e) {
-      print('Error: $e');
       setState(() => isLoading = false);
     }
   }

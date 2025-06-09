@@ -68,7 +68,6 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         throw Exception('Failed to load students (Status: ${response.statusCode})');
       }
     } catch (e) {
-      print('❌ Error: $e');
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -141,7 +140,6 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
         );
       }
     } catch (e) {
-      print("❌ Error saving attendance: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Network error: ${e.toString()}'),

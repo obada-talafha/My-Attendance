@@ -126,7 +126,6 @@ class _CreateCoursePageState extends State<CreateCoursePage> {
   void _submitForm() {
     if (_formKey.currentState?.validate() ?? false) {
       // Simulate submission logic
-      print('Course Created: ${_courseIdController.text}, Instructor: $_selectedInstructor');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Course created successfully!')),
       );

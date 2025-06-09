@@ -103,7 +103,6 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
   Future<void> _endSession() async {
     final url = Uri.parse('https://my-attendance-1.onrender.com/end-session');
 
-    print('Ending session for course: ${widget.courseTitle}, session: ${widget.sessionNumber}');
 
     try {
       final response = await http.post(
@@ -116,15 +115,11 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
       );
 
       if (response.statusCode == 200) {
-        print('Session ended successfully');
         Navigator.pop(context);
       } else {
-        print('End session failed: ${response.statusCode}');
-        print('Response body: ${response.body}');
         _showSnackBar('Failed to end session');
       }
     } catch (e) {
-      print('Error ending session: $e');
       _showSnackBar('Error ending session');
     }
   }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../services/auth_service.dart';
-import 'InstructorHomePage.dart';
 import 'InstructorProfile.dart';
 
 class Instructordrawer extends StatelessWidget {

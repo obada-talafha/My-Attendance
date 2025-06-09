@@ -55,10 +55,7 @@ class _QRScanPageState extends State<QRScanPage> {
         await Future.delayed(const Duration(milliseconds: 500));
         await controller.stop();
 
-        print('==================== SCANNER OUTPUT ====================');
-        print('📷 Scanned QR Code (Base64): $rawCode');
-        print('========================================================');
-        print('Student ID: ${widget.studentId}');
+
 
         try {
           final decoded = utf8.decode(base64Decode(rawCode));
@@ -77,8 +74,6 @@ class _QRScanPageState extends State<QRScanPage> {
             }),
           );
 
-          print('Status code: ${response.statusCode}');
-          print('Response body: ${response.body}');
 
           if (response.statusCode == 200) {
             final result = jsonDecode(response.body);
@@ -104,7 +99,6 @@ class _QRScanPageState extends State<QRScanPage> {
             }
           }
         } catch (e) {
-          print('Error processing QR or server response: $e');
           _showMessage('Invalid QR code or server error');
         }
       }

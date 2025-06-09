@@ -76,7 +76,6 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
         throw Exception('Failed to load students (Status: ${response.statusCode})');
       }
     } catch (e) {
-      print('❌ Error: $e');
       setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -159,7 +158,6 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
         );
       }
     } catch (e) {
-      print("❌ Error saving attendance: $e");
       setState(() {
         isSaving = false;
       });

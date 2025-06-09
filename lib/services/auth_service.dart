@@ -15,7 +15,7 @@ class AuthService {
 
     final endpoint = endpointMap[role];
     if (endpoint == null) {
-      print("❌ Invalid role: $role");
+
       return false;
     }
 
@@ -28,8 +28,7 @@ class AuthService {
         body: jsonEncode({'email': email, 'password': password}),
       );
 
-      print("🔁 STATUS: ${response.statusCode}");
-      print("🔁 BODY: ${response.body}");
+
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -46,10 +45,8 @@ class AuthService {
           return true;
         }
       } else {
-        print("❌ Login failed with status: ${response.statusCode}");
       }
     } catch (e) {
-      print("❌ Exception during login: $e");
     }
 
     return false;

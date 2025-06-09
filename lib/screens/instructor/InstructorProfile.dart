@@ -45,7 +45,6 @@ class _InstructorProfileState extends State<InstructorProfile> {
         setState(() => isLoading = false);
       }
     } catch (e) {
-      print('Error: $e');
       setState(() => isLoading = false);
     }
   }
