@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool rememberMe = false;
 
   String selectedRole = 'student';
-  final roles = ['student', 'instructor', 'admin'];
+  final roles = ['student', 'instructor'];
 
   void _login() async {
     setState(() => isLoading = true);
@@ -48,9 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      if (role == 'admin') {
-        Navigator.pushReplacementNamed(context, '/admin', arguments: arguments);
-      } else if (role == 'instructor') {
+     if (role == 'instructor') {
         Navigator.pushReplacementNamed(context, '/instructor', arguments: arguments);
       } else {
         Navigator.pushReplacementNamed(context, '/student', arguments: arguments);
