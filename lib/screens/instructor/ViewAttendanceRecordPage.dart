@@ -202,7 +202,7 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Manual Attendance",
+          "Attendance Record",
           style: GoogleFonts.jost(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),
         ),
         centerTitle: true,
