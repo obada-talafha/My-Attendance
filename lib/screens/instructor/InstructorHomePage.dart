@@ -134,7 +134,7 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
                 children: [
                   buildTableRow("Section", course["session_number"]?.toString() ?? "", tableFontSize),
                   buildTableRow("Time", course["session_time"] ?? "", tableFontSize),
-                  buildTableRow("Days", course["days"] ?? "", tableFontSize),
+                  buildTableRow("Days", (course["days"] as List<dynamic>).join(", "), tableFontSize),
                 ],
               ),
             ),
@@ -149,8 +149,10 @@ class _InstructorHomePageState extends State<InstructorHomePage> {
                       builder: (_) => InstructorCoursePage(
                         courseTitle: course["course_name"] ?? "",
                         sessionNumber: int.tryParse(course["session_number"].toString()) ?? 0,
+                        days: List<String>.from(course["days"] ?? []), // pass days here
                       ),
-                    ),
+                    )
+
                   );
                 },
                 style: ElevatedButton.styleFrom(

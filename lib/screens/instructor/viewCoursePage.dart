@@ -7,11 +7,12 @@ import 'ViewAttendanceRecordPage.dart';
 class InstructorCoursePage extends StatefulWidget {
   final String courseTitle;
   final int sessionNumber;
-
+  final List<String> days;
   const InstructorCoursePage({
     super.key,
     required this.courseTitle,
     required this.sessionNumber,
+    required this.days,
   });
 
   @override
@@ -19,14 +20,69 @@ class InstructorCoursePage extends StatefulWidget {
 }
 
 class _InstructorCoursePageState extends State<InstructorCoursePage> {
-  DateTime selectedDate = DateTime.now();
+  DateTime? selectedDate;
+
+  // Convert string days to int weekdays, ignoring invalid entries
+  Set<int> get allowedWeekdays {
+    final Set<int> weekdays = {};
+    for (final day in widget.days) {
+      switch (day.toLowerCase()) {
+        case 'monday':
+          weekdays.add(DateTime.monday);
+          break;
+        case 'tuesday':
+          weekdays.add(DateTime.tuesday);
+          break;
+        case 'wednesday':
+          weekdays.add(DateTime.wednesday);
+          break;
+        case 'thursday':
+          weekdays.add(DateTime.thursday);
+          break;
+        case 'friday':
+          weekdays.add(DateTime.friday);
+          break;
+        case 'saturday':
+          weekdays.add(DateTime.saturday);
+          break;
+        case 'sunday':
+          weekdays.add(DateTime.sunday);
+          break;
+      }
+    }
+    return weekdays;
+  }
+
+  // Find nearest allowed weekday on or before the given date (up to 30 days back)
+  DateTime findNearestAllowedDateBeforeOrEqual(DateTime date) {
+    DateTime candidate = date;
+    for (int i = 0; i < 30; i++) {
+      if (allowedWeekdays.contains(candidate.weekday)) return candidate;
+      candidate = candidate.subtract(const Duration(days: 1));
+    }
+    // fallback to today if none found in 30 days
+    return DateTime.now();
+  }
 
   void _pickDate(BuildContext context) async {
+    final DateTime now = DateTime.now();
+
+    // Make sure initialDate is valid and allowed
+    final DateTime initialDate = selectedDate != null && allowedWeekdays.contains(selectedDate!.weekday)
+        ? selectedDate!
+        : findNearestAllowedDateBeforeOrEqual(now);
+
+    final DateTime firstDate = now.subtract(const Duration(days: 365)); // 1 year back
+    final DateTime lastDate = now;
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: selectedDate,
-      firstDate: DateTime(2025), // Prevent past dates
-      lastDate: DateTime.now(),
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      selectableDayPredicate: (date) {
+        return allowedWeekdays.contains(date.weekday);
+      },
     );
 
     if (picked != null && picked != selectedDate) {
@@ -39,8 +95,12 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
   @override
   Widget build(BuildContext context) {
     final bool isSmallScreen = MediaQuery.of(context).size.width < 600;
-    final String formattedDate = DateFormat('yyyy-MM-dd').format(selectedDate);
-    final bool isToday = DateUtils.isSameDay(selectedDate, DateTime.now());
+    final String formattedDate = selectedDate != null
+        ? DateFormat('yyyy-MM-dd').format(selectedDate!)
+        : 'Select Date';
+    final bool isToday = selectedDate != null
+        ? DateUtils.isSameDay(selectedDate, DateTime.now())
+        : false;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1F8FB),
@@ -88,8 +148,8 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        const BoxShadow(
+                      boxShadow: const [
+                        BoxShadow(
                           color: Color.fromRGBO(128, 128, 128, 0.15),
                           blurRadius: 8,
                           offset: Offset(0, 4),
@@ -103,7 +163,11 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
                           child: Text(
-                            isToday ? "$formattedDate (Today)" : formattedDate,
+                            selectedDate == null
+                                ? formattedDate
+                                : (isToday
+                                ? "$formattedDate (Today)"
+                                : formattedDate),
                             key: ValueKey(formattedDate),
                             style: GoogleFonts.jost(fontSize: 16),
                           ),
@@ -116,13 +180,20 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                 _buildMenuButton(
                   title: "Take Attendance",
                   onTap: () {
+                    if (selectedDate == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please select a date first.')),
+                      );
+                      return;
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => TakeAttendanceMethodPage(
                           courseTitle: widget.courseTitle,
-                          selectedDate: selectedDate,
-                          sessionNumber: widget.sessionNumber,                        ),
+                          selectedDate: selectedDate!,
+                          sessionNumber: widget.sessionNumber,
+                        ),
                       ),
                     );
                   },
@@ -131,12 +202,18 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
                 _buildMenuButton(
                   title: "View Attendance Records",
                   onTap: () {
+                    if (selectedDate == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please select a date first.')),
+                      );
+                      return;
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ViewAttendancePage(
                           courseTitle: widget.courseTitle,
-                          selectedDate: selectedDate,
+                          selectedDate: selectedDate!,
                           sessionNumber: widget.sessionNumber,
                         ),
                       ),
@@ -169,8 +246,8 @@ class _InstructorCoursePageState extends State<InstructorCoursePage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            const BoxShadow(
+          boxShadow: const [
+            BoxShadow(
               color: Color.fromRGBO(128, 128, 128, 0.12),
               blurRadius: 10,
               offset: Offset(0, 4),

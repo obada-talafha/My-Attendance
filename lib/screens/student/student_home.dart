@@ -12,7 +12,7 @@ class Course {
   final String courseName;
   final String sessionNum;
   final String studentId;
-  final String days;
+  final List<String> days; // Changed here from String to List<String>
   final String time;
   final String hall;
   final String creditHours;
@@ -36,7 +36,7 @@ class Course {
       courseName: json['course_name'],
       sessionNum: json['session_number'].toString(),
       studentId: studentId,
-      days: json['days'],
+      days: List<String>.from(json['days'] ?? []), // Parsing the list safely
       time: json['session_time'],
       hall: json['session_location'],
       creditHours: json['credit_hours'].toString(),
@@ -77,23 +77,21 @@ class _StudentHomePageState extends State<StudentHomePage> {
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
+        final jsonBody = response.body;
+        final decoded = jsonDecode(jsonBody);
 
-        if (jsonData['success'] == true) {
-          final List data = jsonData['courses'];
-          final List<Course> loadedCourses = [];
-
-          for (var c in data) {
-            final course = Course.fromJson(c, studentId);
-            loadedCourses.add(course);
-          }
+        if (decoded['success'] == true) {
+          final List<dynamic> data = decoded['courses'];
+          final List<Course> loadedCourses = data
+              .map((c) => Course.fromJson(c as Map<String, dynamic>, studentId))
+              .toList();
 
           setState(() {
             courses = loadedCourses;
             isLoading = false;
           });
         } else {
-          throw Exception(jsonData['message'] ?? 'Failed to load courses');
+          throw Exception(decoded['message'] ?? 'Failed to load courses');
         }
       } else {
         throw Exception('Failed to load courses. Status: ${response.statusCode}');
@@ -123,7 +121,7 @@ class _StudentHomePageState extends State<StudentHomePage> {
             fontSize: 20,
           ),
         ),
-        actions: const [], // Removed notification button
+        actions: const [],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -253,7 +251,8 @@ class CourseCard extends StatelessWidget {
               },
               children: [
                 buildTableRow("Sec No.", course.sessionNum),
-                buildTableRow("Days", course.days),
+                // Join the List<String> days into a comma separated string
+                buildTableRow("Days", course.days.join(", ")),
                 buildTableRow("Time", course.time),
                 buildTableRow("Hall", course.hall),
                 buildTableRow("Instructor", course.instructor),
