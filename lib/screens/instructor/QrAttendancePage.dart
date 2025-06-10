@@ -29,7 +29,7 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
   @override
   void initState() {
     super.initState();
-    _generateQRCode();
+    _generateQRCode(); // This is called first
     _startQrTimer();
     _startCountdownTimer();
   }
@@ -63,18 +63,24 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
   Future<void> _generateQRCode() async {
     final url = Uri.parse('https://my-attendance-1.onrender.com/qr_code');
 
+    final requestBody = jsonEncode({
+      'course_name': widget.courseTitle,
+      'session_number': widget.sessionNumber,
+      'session_date': widget.selectedDate.toIso8601String(), // ADD THIS LINE!
+    });
+    print('Sending QR Code Generation Request Body: $requestBody');
+
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'course_name': widget.courseTitle,
-          'session_number': widget.sessionNumber,
-        }),
+        body: requestBody,
       );
 
       if (response.statusCode == 201) {
         final data = jsonDecode(response.body);
+        print('QR Code Generated Successfully: Status Code ${response.statusCode}');
+        print('QR Code Response Body: ${response.body}');
 
         if (data.containsKey('session') &&
             data['session'].containsKey('qr_token') &&
@@ -90,12 +96,16 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
             });
           }
         } else {
-          _showSnackBar('Missing QR code data from server');
+          _showSnackBar('Missing QR code data from server response');
+          print('Error: Missing QR code data from server response. Response: ${response.body}');
         }
       } else {
-        _showSnackBar('Failed to generate QR code');
+        print('Failed to generate QR code: Status Code ${response.statusCode}');
+        print('QR Code Response Body: ${response.body}');
+        _showSnackBar('Failed to generate QR code: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error generating QR code: $e');
       _showSnackBar('Error generating QR code');
     }
   }
@@ -103,24 +113,29 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
   Future<void> _endSession() async {
     final url = Uri.parse('https://my-attendance-1.onrender.com/end-session');
 
+    final requestBody = jsonEncode({
+      'course_name': widget.courseTitle,
+      'session_number': widget.sessionNumber,
+      'session_date': widget.selectedDate.toIso8601String(),
+    });
+    print('Sending End Session Request Body: $requestBody');
 
     try {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'course_name': widget.courseTitle,
-          'session_number': widget.sessionNumber,
-          'session_date': widget.selectedDate.toIso8601String(),
-        }),
+        body: requestBody,
       );
 
       if (response.statusCode == 200) {
         Navigator.pop(context);
       } else {
-        _showSnackBar('Failed to end session');
+        print('End Session Failed: Status Code ${response.statusCode}');
+        print('End Session Response Body: ${response.body}');
+        _showSnackBar('Failed to end session: ${response.statusCode}');
       }
     } catch (e) {
+      print('Error ending session: $e');
       _showSnackBar('Error ending session');
     }
   }
