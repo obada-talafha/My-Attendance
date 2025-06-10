@@ -96,7 +96,7 @@ router.post('/end-session', async (req, res) => {
     });
 
   } catch (error) {
-    // Log any errors that occur during the process
+    // Log any errors that occur during thev process
     console.error('Error ending session:', error);
     // Send an internal server error response
     res.status(500).json({ message: 'Internal server error occurred while ending session.' });
