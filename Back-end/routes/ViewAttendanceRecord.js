@@ -22,7 +22,7 @@ ViewAttendanceRecord.get('/:courseName/:sessionNumber/:sessionDate', async (req,
 
     const count = parseInt(attendanceExists.rows[0].count, 10);
     if (count === 0) {
-      return res.status(200).json([]); // Let frontend display "No attendance record for this day."
+      return res.status(200).json({ success: true, records: [] });
     }
 
     // Step 2: Return all enrolled students and their status for this day
@@ -49,10 +49,10 @@ ViewAttendanceRecord.get('/:courseName/:sessionNumber/:sessionDate', async (req,
     `;
 
     const { rows } = await pool.query(studentsQuery, [courseName, sessionNumber, sessionDate]);
-    res.status(200).json(rows);
+    res.status(200).json({ success: true, records: rows });
   } catch (error) {
     console.error('Error fetching attendance records:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -79,6 +79,7 @@ ViewAttendanceRecord.post('/save', async (req, res) => {
     const recordCount = parseInt(existingRecordsCheck.rows[0].count, 10);
     if (recordCount === 0) {
       return res.status(404).json({
+        success: false,
         message: 'No attendance records found for this session on the selected date.'
       });
     }
@@ -97,10 +98,10 @@ ViewAttendanceRecord.post('/save', async (req, res) => {
       );
     }
 
-    res.status(200).json({ message: 'Attendance records updated successfully.' });
+    res.status(200).json({ success: true, message: 'Attendance records updated successfully.' });
   } catch (error) {
     console.error('Error updating attendance records:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 

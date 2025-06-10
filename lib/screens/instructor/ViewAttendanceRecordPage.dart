@@ -34,7 +34,6 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     fetchStudents();
   }
 
-  // Fetch students attendance from backend API
   Future<void> fetchStudents() async {
     setState(() {
       isLoading = true;
@@ -42,8 +41,9 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
       isSaving = false;
     });
 
+    final formattedDate = DateFormat('yyyy-MM-dd').format(widget.selectedDate);
     final url = Uri.parse(
-      'https://my-attendance-1.onrender.com/ViewAttendanceRecord/${widget.courseTitle}/${widget.sessionNumber}/${widget.selectedDate}',
+      'https://my-attendance-1.onrender.com/ViewAttendanceRecord/${widget.courseTitle}/${widget.sessionNumber}/$formattedDate',
     );
 
     try {
@@ -86,7 +86,6 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     }
   }
 
-  // Filters the list based on query
   List<Map<String, dynamic>> _filterStudentsList(List<Map<String, dynamic>> list, String query) {
     final q = query.toLowerCase();
     if (q.isEmpty) return List.from(list);
@@ -97,7 +96,6 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     }).toList();
   }
 
-  // Called when user types in search box
   void filterStudents(String query) {
     setState(() {
       searchQuery = query;
@@ -105,7 +103,6 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     });
   }
 
-  // Save all attendance data to backend
   Future<void> updateAllAttendance() async {
     if (!hasChanges || isSaving) return;
 
@@ -170,7 +167,6 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     }
   }
 
-  // Mark all students present/absent
   void markAll(bool present) {
     setState(() {
       for (var s in students) {
@@ -185,6 +181,72 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
       hasChanges = true;
     });
   }
+
+  TableRow _buildTableHeader() => TableRow(
+    decoration: const BoxDecoration(color: Color(0xFFE8F1FF)),
+    children: [
+      _buildHeaderCell("#NO"),
+      _buildHeaderCell("Student Name"),
+      _buildHeaderCell("#St.No"),
+      _buildHeaderCell("#Abs.No"),
+      _buildHeaderCell("Status"),
+    ],
+  );
+
+  TableRow _buildTableRow(Map<String, dynamic> s) {
+    final abs = int.tryParse(s["absNo"].toString()) ?? 0;
+    Color? bgColor;
+
+    if (abs >= 10) {
+      bgColor = Colors.redAccent.withOpacity(0.3);
+    } else if (abs >= 9) {
+      bgColor = Colors.yellowAccent.withOpacity(0.3);
+    }
+
+    return TableRow(
+      decoration: bgColor != null ? BoxDecoration(color: bgColor) : null,
+      children: [
+        _buildCell(s["no"], bold: true),
+        _buildCell(s["name"], color: Colors.blueAccent, bold: true),
+        _buildCell(s["stNo"]),
+        _buildCell(s["absNo"].toString()),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+          child: Switch(
+            value: s["isPresent"] as bool? ?? false,
+            onChanged: (bool newValue) {
+              setState(() {
+                final wasPresent = s["isPresent"] as bool? ?? false;
+                if (wasPresent != newValue) {
+                  int abs = int.tryParse(s["absNo"].toString()) ?? 0;
+                  s["absNo"] = newValue ? (abs > 0 ? abs - 1 : 0) : abs + 1;
+                  s["isPresent"] = newValue;
+                  hasChanges = true;
+                }
+              });
+            },
+            activeColor: Colors.green,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeaderCell(String label) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+    child: Text(label, style: GoogleFonts.jost(fontWeight: FontWeight.bold)),
+  );
+
+  Widget _buildCell(String text, {Color? color, bool bold = false}) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+    child: Text(
+      text,
+      style: GoogleFonts.jost(
+        fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+        color: color,
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -255,118 +317,39 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
               ),
             ),
             const SizedBox(height: 10),
-      Expanded(
-        child: filteredStudents.isEmpty
-            ? Center(
-          child: Text(
-            'No absence record for this day.',
-            style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
-          ),
-        )
-            : filteredStudents.every((s) => s['isPresent'] == true)
-            ? Center(
-          child: Text(
-            'No absence record for this day.',
-            style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
-          ),
-        )
-            : SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Table(
-              border: TableBorder.all(color: const Color(0xFFE8F1FF)),
-              columnWidths: const {
-                0: FlexColumnWidth(1),
-                1: FlexColumnWidth(3),
-                2: FlexColumnWidth(2),
-                3: FlexColumnWidth(2),
-                4: FlexColumnWidth(2),
-              },
-              children: [
-                _buildTableHeader(),
-                for (var student in filteredStudents) _buildTableRow(student),
-              ],
+            Expanded(
+              child: filteredStudents.isEmpty ||
+                  filteredStudents.every((s) => s['isPresent'] == true)
+                  ? Center(
+                child: Text(
+                  'No absence record for this day.',
+                  style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
+                ),
+              )
+                  : SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Table(
+                    border: TableBorder.all(color: const Color(0xFFE8F1FF)),
+                    columnWidths: const {
+                      0: FlexColumnWidth(1),
+                      1: FlexColumnWidth(3),
+                      2: FlexColumnWidth(2),
+                      3: FlexColumnWidth(2),
+                      4: FlexColumnWidth(2),
+                    },
+                    children: [
+                      _buildTableHeader(),
+                      for (var student in filteredStudents)
+                        _buildTableRow(student),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
-
           ],
         ),
       ),
     );
   }
-
-  TableRow _buildTableHeader() => TableRow(
-    decoration: const BoxDecoration(color: Color(0xFFE8F1FF)),
-    children: [
-      _buildHeaderCell("#NO"),
-      _buildHeaderCell("Student Name"),
-      _buildHeaderCell("#St.No"),
-      _buildHeaderCell("#Abs.No"),
-      _buildHeaderCell("Status"),
-    ],
-  );
-
-  TableRow _buildTableRow(Map<String, dynamic> s) {
-    final abs = int.tryParse(s["absNo"].toString()) ?? 0;
-    Color? bgColor;
-
-    if (abs >= 10) {
-      bgColor = Colors.redAccent.withOpacity(0.3);
-    } else if (abs >= 9) {
-      bgColor = Colors.yellowAccent.withOpacity(0.3);
-    }
-
-    return TableRow(
-      decoration: bgColor != null ? BoxDecoration(color: bgColor) : null,
-      children: [
-        _buildCell(s["no"], bold: true),
-        _buildCell(s["name"], color: Colors.blueAccent, bold: true),
-        _buildCell(s["stNo"]),
-        _buildCell(s["absNo"].toString()),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-          child: Switch(
-            value: s["isPresent"] as bool? ?? false,
-            onChanged: (bool newValue) {
-              setState(() {
-                final wasPresent = s["isPresent"] as bool? ?? false;
-                if (wasPresent != newValue) {
-                  int abs = int.tryParse(s["absNo"].toString()) ?? 0;
-                  s["absNo"] = newValue ? (abs > 0 ? abs - 1 : 0) : abs + 1;
-                  s["isPresent"] = newValue;
-                  hasChanges = true;
-                }
-              });
-            },
-            activeColor: Colors.green,
-            inactiveTrackColor: Colors.redAccent,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeaderCell(String text) => Padding(
-    padding: const EdgeInsets.all(8),
-    child: Text(
-      text,
-      textAlign: TextAlign.center,
-      style: GoogleFonts.jost(fontSize: 12, fontWeight: FontWeight.bold),
-    ),
-  );
-
-  Widget _buildCell(String text, {Color? color, bool bold = false}) => Padding(
-    padding: const EdgeInsets.all(8),
-    child: Text(
-      text,
-      textAlign: TextAlign.center,
-      style: GoogleFonts.jost(
-        fontSize: 12,
-        fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-        color: color ?? Colors.black,
-      ),
-    ),
-  );
 }
