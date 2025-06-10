@@ -49,7 +49,9 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        // CHANGE HERE: Access 'records' key instead of 'students'
+        final List<dynamic> data = jsonResponse['records'] ?? [];
         final Set<String> addedIds = {};
         final List<Map<String, dynamic>> uniqueStudents = [];
 
@@ -318,11 +320,10 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: filteredStudents.isEmpty ||
-                  filteredStudents.every((s) => s['isPresent'] == true)
+              child: filteredStudents.isEmpty
                   ? Center(
                 child: Text(
-                  'No absence record for this day.',
+                  'No student records found for this date.',
                   style: GoogleFonts.jost(fontSize: 14, color: Colors.black54),
                 ),
               )

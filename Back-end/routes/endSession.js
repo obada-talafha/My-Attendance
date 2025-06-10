@@ -4,33 +4,37 @@ import pool from '../db/index.js';
 const router = express.Router();
 
 router.post('/end-session', async (req, res) => {
-  const { course_name, session_number } = req.body;
+  // 1. Destructure session_date from req.body
+  const { course_name, session_number, session_date } = req.body;
 
-  if (!course_name || !session_number) {
-    return res.status(400).json({ message: 'Missing course_name or session_number' });
+  // 2. Add validation for session_date
+  if (!course_name || !session_number || !session_date) {
+    return res.status(400).json({ message: 'Missing course_name, session_number, or session_date' });
   }
 
   try {
     const client = await pool.connect();
 
-    // Get the latest session for the course and session number
+    // 3. Get the session_id using course_name, session_number, and the provided session_date
+    //    We no longer fetch session_date from qr_session, but use it to find the correct session_id.
     const sessionRes = await client.query(
-      `SELECT session_id, session_date
+      `SELECT session_id
        FROM qr_session
-       WHERE course_name = $1 AND session_number = $2
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [course_name, session_number]
+       WHERE course_name = $1 AND session_number = $2 AND session_date = $3`, // Filter by the provided date
+      [course_name, session_number, session_date] // Pass session_date as a parameter
     );
 
     if (sessionRes.rowCount === 0) {
       client.release();
-      return res.status(404).json({ message: 'Session not found' });
+      return res.status(404).json({ message: 'Session not found for the given criteria.' });
     }
 
-    const { session_id, session_date } = sessionRes.rows[0];
+    // 4. Only destructure session_id, as session_date is now from req.body
+    const { session_id } = sessionRes.rows[0];
 
     // Get all students enrolled in this course/session
+    // NOTE: If enrollment is tied to specific session_date, you might need to adjust this query too.
+    // For now, assuming enrollment is course_name/session_number specific.
     const enrolledRes = await client.query(
       `SELECT student_id
        FROM enrollment
@@ -57,8 +61,9 @@ router.post('/end-session', async (req, res) => {
       const params = [session_id]; // session_id will be $1
 
       absentees.forEach((student_id, index) => {
-        const base = index * 4 + 2; // param index starts after session_id
+        const base = index * 4 + 2; // param index starts after session_id (which is $1)
         values.push(`($1, $${base}, false, false, NOW(), $${base + 1}, $${base + 2}, $${base + 3})`);
+        // 5. Use the session_date from req.body here
         params.push(student_id, session_date, session_number, course_name);
       });
 

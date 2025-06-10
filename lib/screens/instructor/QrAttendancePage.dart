@@ -111,6 +111,7 @@ class _QrAttendancePageState extends State<QrAttendancePage> {
         body: jsonEncode({
           'course_name': widget.courseTitle,
           'session_number': widget.sessionNumber,
+          'session_date': widget.selectedDate.toIso8601String(),
         }),
       );
 
