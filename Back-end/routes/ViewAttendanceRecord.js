@@ -11,6 +11,7 @@ ViewAttendanceRecord.get('/:courseName/:sessionNumber/:sessionDate', async (req,
 
   try {
     // Step 1: Check if any records exist for this session and date
+    // This check is good as it is.
     const attendanceExists = await pool.query(
       `
       SELECT COUNT(*) AS count
@@ -22,6 +23,8 @@ ViewAttendanceRecord.get('/:courseName/:sessionNumber/:sessionDate', async (req,
 
     const count = parseInt(attendanceExists.rows[0].count, 10);
     if (count === 0) {
+      // If no attendance records for this specific session and date,
+      // return an empty array but with success.
       return res.status(200).json({ success: true, records: [] });
     }
 
@@ -30,14 +33,21 @@ ViewAttendanceRecord.get('/:courseName/:sessionNumber/:sessionDate', async (req,
       SELECT
         s.student_id,
         s.name AS student_name,
+        -- Calculate absence_count for the specific course,
+        -- counting absences up to (but not including) the current session number.
         COALESCE(a_abs.absence_count, 0) AS absence_count,
         COALESCE(a_session.is_present, false) AS is_present
       FROM enrollment e
       JOIN student s ON e.student_id = s.student_id
       LEFT JOIN (
-        SELECT student_id, COUNT(*) AS absence_count
+        SELECT
+          student_id,
+          COUNT(*) AS absence_count
         FROM attendance
-        WHERE is_present = false
+        WHERE
+          is_present = false AND
+          course_name = $1 AND -- Filter by the current course
+          session_number < $2::int -- Count absences before the current session number
         GROUP BY student_id
       ) a_abs ON a_abs.student_id = s.student_id
       LEFT JOIN (
@@ -78,9 +88,11 @@ ViewAttendanceRecord.post('/save', async (req, res) => {
 
     const recordCount = parseInt(existingRecordsCheck.rows[0].count, 10);
     if (recordCount === 0) {
+      // It seems the intention here is to only *update* existing records, not create new ones.
+      // If no records are found for this specific date/session, it makes sense to return a 404.
       return res.status(404).json({
         success: false,
-        message: 'No attendance records found for this session on the selected date.'
+        message: 'No attendance records found for this session on the selected date. Cannot update.'
       });
     }
 
