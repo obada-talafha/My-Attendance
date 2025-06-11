@@ -10,13 +10,13 @@ import 'student_home.dart';
 class FaceScanPage extends StatefulWidget {
   final String studentId;
   final Map<String, dynamic> qrData;
-  final Map<String, dynamic> sessionInfo; // <--- ADDED: Define sessionInfo here
+  final Map<String, dynamic> sessionInfo;
 
   const FaceScanPage({
     Key? key,
     required this.studentId,
     required this.qrData,
-    required this.sessionInfo, // <--- ADDED: Add it to the constructor
+    required this.sessionInfo,
   }) : super(key: key);
 
   @override
@@ -83,17 +83,16 @@ class _FaceScanPageState extends State<FaceScanPage> {
       final base64Image = base64Encode(bytes);
 
       // Define the API endpoint for marking attendance.
-      // This should be the main endpoint that handles both QR and face verification.
       final Uri apiUrl = Uri.parse('https://my-attendance-1.onrender.com/mark-attendance');
 
       // Extract session_id from the sessionInfo received from QRScanPage
-      final String sessionId = widget.sessionInfo['session_id'];
+      // Explicitly convert session_id to String using .toString()
+      final String sessionId = widget.sessionInfo['session_id'].toString(); // <--- FIXED HERE
 
       // Prepare the request body.
-      // Now sending 'session_id' directly as expected by the updated backend's /mark-attendance endpoint.
       final Map<String, dynamic> requestBody = {
         'student_id': widget.studentId,
-        'session_id': sessionId, // <--- CHANGED: Send session_id directly
+        'session_id': sessionId, // Send the session_id as a String
         'face_image': base64Image, // Use 'face_image' as expected by the backend
       };
 
@@ -177,8 +176,6 @@ class _FaceScanPageState extends State<FaceScanPage> {
         child: Stack(
           children: [
             // Display the camera preview.
-            // Using a FittedBox to ensure the camera preview covers the available space
-            // while maintaining its aspect ratio.
             SizedBox(
               width: MediaQuery.of(context).size.width,
               height: MediaQuery.of(context).size.height,

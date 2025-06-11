@@ -1,5 +1,3 @@
-// app.js (UPDATED - Ensure this is the one on your Render.com)
-
 import express from 'express';
 import cors from 'cors';
 
@@ -22,7 +20,7 @@ import { deleteAttendance } from './routes/deleteAbsences.js';
 // QR/Face session routes
 import { createQRSession } from './routes/QR_session.js';
 import { verifyFace } from './routes/verifyFace.js';
-import studentQrAttendanceRouter from './routes/studentQrAttendance.js'; // This router now contains /verify-qr and /mark-attendance
+import studentQrAttendanceRouter from './routes/studentQrAttendance.js';
 import endSessionRouter from './routes/endSession.js';
 
 // Manual attendance
@@ -33,7 +31,8 @@ const app = express();
 
 // === MIDDLEWARE ===
 app.use(cors({ origin: '*' }));
-app.use(express.json());
+// Increase the payload limit for JSON bodies
+app.use(express.json({ limit: '50mb' })); // <--- ADDED: Increase the limit here
 
 // === ROUTES ===
 
@@ -57,12 +56,8 @@ app.delete('/delete-attendance', deleteAttendance);
 // 📷 QR/Face
 app.post('/qr_code', createQRSession);
 app.post('/verify-face', verifyFace);
-// Mount the studentQrAttendanceRouter to the root path '/'
-// This will make its internal routes available directly:
-// - POST /verify-qr
-// - POST /mark-attendance
-app.use('/', studentQrAttendanceRouter); // <--- CHANGED: Mount at root '/' to access its internal routes directly
-app.use(endSessionRouter); // Ensure endSessionRouter doesn't conflict with /verify-qr or /mark-attendance
+app.use('/', studentQrAttendanceRouter);
+app.use(endSessionRouter);
 
 // ✍️ Manual Attendance
 app.use('/manual-attendance', manualAttendanceRouter);
