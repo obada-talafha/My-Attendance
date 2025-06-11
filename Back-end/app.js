@@ -1,3 +1,5 @@
+// app.js (UPDATED - Ensure this is the one on your Render.com)
+
 import express from 'express';
 import cors from 'cors';
 
@@ -5,8 +7,8 @@ import cors from 'cors';
 import { loginStudent, loginInstructor } from './routes/auth.js';
 
 // Student routes
-import { getStudentProfile } from './routes/studentController.js'; // ✅ renamed for clarity
-import { getStudentImage } from './routes/studentController.js';   // ✅ image route added
+import { getStudentProfile } from './routes/studentController.js';
+import { getStudentImage } from './routes/studentController.js';
 import { getStudentCourses } from './routes/studentHome.js';
 import studentAbsencesRoute from './routes/getStudentAbsences.js';
 
@@ -20,7 +22,7 @@ import { deleteAttendance } from './routes/deleteAbsences.js';
 // QR/Face session routes
 import { createQRSession } from './routes/QR_session.js';
 import { verifyFace } from './routes/verifyFace.js';
-import studentQrAttendanceRouter from './routes/studentQrAttendance.js';
+import studentQrAttendanceRouter from './routes/studentQrAttendance.js'; // This router now contains /verify-qr and /mark-attendance
 import endSessionRouter from './routes/endSession.js';
 
 // Manual attendance
@@ -42,7 +44,7 @@ app.post('/loginInstructor', loginInstructor);
 // 🎓 Student
 app.get('/studentHome', getStudentCourses);
 app.get('/studentProfile', getStudentProfile);
-app.get('/studentImage', getStudentImage); // ✅ NEW ROUTE ADDED
+app.get('/studentImage', getStudentImage);
 app.use('/student-absences', studentAbsencesRoute);
 
 // 👨‍🏫 Instructor
@@ -55,8 +57,12 @@ app.delete('/delete-attendance', deleteAttendance);
 // 📷 QR/Face
 app.post('/qr_code', createQRSession);
 app.post('/verify-face', verifyFace);
-app.use('/mark-attendance', studentQrAttendanceRouter);
-app.use(endSessionRouter);
+// Mount the studentQrAttendanceRouter to the root path '/'
+// This will make its internal routes available directly:
+// - POST /verify-qr
+// - POST /mark-attendance
+app.use('/', studentQrAttendanceRouter); // <--- CHANGED: Mount at root '/' to access its internal routes directly
+app.use(endSessionRouter); // Ensure endSessionRouter doesn't conflict with /verify-qr or /mark-attendance
 
 // ✍️ Manual Attendance
 app.use('/manual-attendance', manualAttendanceRouter);
