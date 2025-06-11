@@ -63,21 +63,27 @@ router.post('/', async (req, res) => {
       return res.status(200).json({ message: 'You have already scanned the QR code' });
     }
 
-    // ✅ Step 4: Face verification (calls Flask)
-    let verified_face = false;
-    try {
-      const faceResponse = await axios.post('http://localhost:5000/verify-face', { image: face_image });
+   // ✅ Step 4: Face verification (calls Flask)
+       let verified_face = false;
+       try {
+         const faceResponse = await axios.post('http://localhost:5000/verify-face', { image: face_image });
 
-      if (
-        faceResponse.data.status === 'success' &&
-        faceResponse.data.student_id === student_id
-      ) {
-        verified_face = true;
-      }
-    } catch (faceErr) {
-      console.error('Face verification failed:', faceErr.message);
-      // Optional: return error or just log failure
-    }
+         if (
+           faceResponse.data.status === 'success' &&
+           faceResponse.data.student_id === student_id
+         ) {
+           verified_face = true;
+         } else {
+           // If face verification was unsuccessful but the call itself didn't error
+           console.warn('Face verification returned unsuccessful status or mismatched student_id.');
+           // If mandatory, uncomment the line below:
+           // return res.status(400).json({ error: 'Face verification failed or student ID mismatch' });
+         }
+       } catch (faceErr) {
+         console.error('Face verification failed:', faceErr.message);
+         // If mandatory, uncomment the line below:
+         // return res.status(500).json({ error: 'Face verification service unavailable or encountered an error' });
+       }
 
     // ✅ Step 5: Insert attendance
     await pool.query(
