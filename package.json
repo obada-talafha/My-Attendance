@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
+    "bcrypt": "^6.0.0",
     "nodemon": "^3.1.10",
     "pg": "^8.15.6"
   }
