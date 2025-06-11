@@ -19,7 +19,7 @@ class FaceScanPage extends StatefulWidget {
 
 class _FaceScanPageState extends State<FaceScanPage> {
   CameraController? _cameraController;
-  bool isSending = false;
+  bool isSending = false; // Flag to prevent multiple sends
 
   @override
   void initState() {
@@ -27,59 +27,78 @@ class _FaceScanPageState extends State<FaceScanPage> {
     _initializeCamera();
   }
 
+  // Initializes the front camera for face scanning.
   Future<void> _initializeCamera() async {
     try {
+      // Get all available cameras on the device.
       final cameras = await availableCameras();
+      // Find the front-facing camera. If not found, default to the first available camera.
       final frontCamera = cameras.firstWhere(
             (camera) => camera.lensDirection == CameraLensDirection.front,
         orElse: () => cameras.first,
       );
 
+      // Initialize the camera controller with the selected camera and medium resolution.
       _cameraController = CameraController(frontCamera, ResolutionPreset.medium);
       await _cameraController!.initialize();
 
+      // Update the UI once the camera is initialized.
       if (mounted) setState(() {});
     } catch (e) {
-      _showMessage('Failed to initialize camera');
+      // Show an error message if camera initialization fails.
+      _showMessage('Failed to initialize camera. Please check camera permissions.');
     }
   }
 
+  // Captures a face image and sends it to the backend for attendance marking.
   Future<void> _captureAndSendFace() async {
-    if (_cameraController == null || isSending) return;
+    // Prevent multiple sends or if camera controller is not ready.
+    if (_cameraController == null || !_cameraController!.value.isInitialized || isSending) {
+      return;
+    }
 
     try {
+      // Set sending flag to true to disable the button and show loading.
       setState(() {
         isSending = true;
       });
 
+      // Take a picture using the camera controller.
       final XFile imageFile = await _cameraController!.takePicture();
+      // Read the image file as bytes.
       final bytes = await File(imageFile.path).readAsBytes();
+      // Encode the image bytes to a Base64 string for sending via JSON.
       final base64Image = base64Encode(bytes);
 
+      // Define the API endpoint for marking attendance.
+      // This should be the main endpoint that handles both QR and face verification.
+      final Uri apiUrl = Uri.parse('https://my-attendance-1.onrender.com/mark-attendance');
+
+      // Prepare the request body.
+      // Ensure 'face_image' key matches what your Express.js backend expects.
+      final Map<String, dynamic> requestBody = {
+        'student_id': widget.studentId,
+        'qr_data': widget.qrData, // Pass the entire QR data object received from QRScanPage
+        'face_image': base64Image, // Use 'face_image' as expected by the backend
+      };
+
+      // Make the POST request to the backend.
       final response = await http.post(
-        Uri.parse('https://my-attendance-1.onrender.com/verify-face'),
+        apiUrl,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'student_id': widget.studentId,
-          'session_id': widget.qrData['session_id'],
-          'qr_token': widget.qrData['qr_token'],
-          'image_base64': base64Image,
-        }),
+        body: jsonEncode(requestBody),
       );
 
+      // Decode the response from the backend.
       final result = jsonDecode(response.body);
-      final message = result['message'] ?? 'Face verification completed';
 
-      _showMessage(message);
-    } catch (e) {
-      _showMessage('Failed to verify face.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          isSending = false;
-        });
+      // Check the HTTP status code for success or failure.
+      if (response.statusCode == 200) {
+        // Attendance successfully marked.
+        final message = result['message'] ?? 'Attendance marked successfully!';
+        _showMessage(message);
 
-        // Auto navigate to StudentHomePage after delay
+        // Navigate to the StudentHomePage after a short delay for the message to be seen.
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
             Navigator.pushReplacement(
@@ -88,10 +107,25 @@ class _FaceScanPageState extends State<FaceScanPage> {
             );
           }
         });
+      } else {
+        // Handle backend errors based on status code.
+        final errorMessage = result['error'] ?? 'Failed to mark attendance with an unknown error.';
+        _showMessage(errorMessage);
+      }
+    } catch (e) {
+      // Catch any network or other unexpected errors.
+      _showMessage('An error occurred during face scan or attendance marking: ${e.toString()}');
+    } finally {
+      // Ensure the sending flag is reset after the operation, regardless of success or failure.
+      if (mounted) {
+        setState(() {
+          isSending = false;
+        });
       }
     }
   }
 
+  // Shows a SnackBar message at the bottom of the screen.
   void _showMessage(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
@@ -100,6 +134,8 @@ class _FaceScanPageState extends State<FaceScanPage> {
 
   @override
   void dispose() {
+    // Dispose of the camera controller when the widget is removed from the tree
+    // to prevent memory leaks and ensure the camera resource is released.
     _cameraController?.dispose();
     super.dispose();
   }
@@ -114,15 +150,16 @@ class _FaceScanPageState extends State<FaceScanPage> {
         foregroundColor: Colors.white,
       ),
       body: _cameraController == null || !_cameraController!.value.isInitialized
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.white)) // Show loading while camera initializes
           : SafeArea(
         child: Stack(
           children: [
+            // Display the camera preview.
             CameraPreview(_cameraController!),
 
-            // Move scan box higher
+            // Visual overlay for the face scanning area.
             Positioned(
-              top: 100,
+              top: 100, // Adjusted position to be higher
               left: MediaQuery.of(context).size.width / 2 - 125,
               child: Container(
                 width: 250,
@@ -135,19 +172,32 @@ class _FaceScanPageState extends State<FaceScanPage> {
               ),
             ),
 
-            // Scan button aligned at bottom center
+            // Scan button aligned at bottom center.
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                 child: ElevatedButton.icon(
+                  // Disable button while sending request.
                   onPressed: isSending ? null : _captureAndSendFace,
-                  icon: const Icon(Icons.face),
-                  label: const Text('Scan Face'),
+                  icon: isSending
+                      ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                      : const Icon(Icons.face),
+                  label: Text(isSending ? 'Processing...' : 'Scan Face'),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(50),
                     backgroundColor: Colors.deepPurple,
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),

@@ -1,99 +1,61 @@
 import pool from '../db/index.js';
+import bcrypt from 'bcrypt'; // Import bcrypt
 
-// LOGIN FOR STUDENT
-const loginStudent = async (req, res) => {
-  console.log("REQ BODY (student):", req.body);
+// Helper function to handle login logic for different user types
+const handleLogin = async (req, res, tableName, idColumnName) => {
+  console.log(`REQ BODY (${tableName}):`, req.body);
 
   const { email, password } = req.body;
 
   try {
+    // 1. Retrieve user by email (don't query by password directly)
+    // Select the 'password' column which now stores the hash
     const result = await pool.query(
-      'SELECT * FROM "student" WHERE "email" = $1 AND "password" = $2',
-      [email, password]
+      `SELECT *, password FROM "${tableName}" WHERE "email" = $1`,
+      [email]
     );
 
     if (result.rows.length > 0) {
-      const student = result.rows[0];
-      res.status(200).json({
-        success: true,
-        userType: "student",
-        user: {
-          id: student.student_id,
-          name: student.name,
-          email: student.email,
-        }
-      });
+      const user = result.rows[0];
+      const storedHashedPassword = user.password; // Get the stored hashed password from the 'password' column
+
+      // 2. Compare the plain-text password with the stored hash
+      const passwordMatches = await bcrypt.compare(password, storedHashedPassword);
+
+      if (passwordMatches) {
+        res.status(200).json({
+          success: true,
+          userType: tableName, // e.g., "student", "instructor"
+          user: {
+            id: user[idColumnName], // Dynamically get the ID (student_id or instructor_id)
+            name: user.name,
+            email: user.email,
+          }
+        });
+      } else {
+        // Passwords do not match
+        res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
     } else {
+      // User not found
       res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
   } catch (err) {
-    console.error('Student Login Error:', err.message);
+    console.error(`${tableName} Login Error:`, err.message);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };
 
-// LOGIN FOR ADMIN
-const loginAdmin = async (req, res) => {
-  console.log("REQ BODY (admin):", req.body);
-
-  const { email, password } = req.body;
-
-  try {
-    const result = await pool.query(
-      'SELECT * FROM "admin" WHERE "email" = $1 AND "password" = $2',
-      [email, password]
-    );
-
-    if (result.rows.length > 0) {
-      const admin = result.rows[0];
-      res.status(200).json({
-        success: true,
-        userType: "admin",
-        user: {
-          id: admin.admin_id,
-          name: admin.name,
-          email: admin.email,
-        }
-      });
-    } else {
-      res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
-  } catch (err) {
-    console.error('Admin Login Error:', err.message);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+// LOGIN FOR STUDENT
+const loginStudent = async (req, res) => {
+  await handleLogin(req, res, 'student', 'student_id');
 };
 
 // LOGIN FOR INSTRUCTOR
 const loginInstructor = async (req, res) => {
-  console.log("REQ BODY (instructor):", req.body);
-
-  const { email, password } = req.body;
-
-  try {
-    const result = await pool.query(
-      'SELECT * FROM "instructor" WHERE "email" = $1 AND "password" = $2',
-      [email, password]
-    );
-
-    if (result.rows.length > 0) {
-      const instructor = result.rows[0];
-      res.status(200).json({
-        success: true,
-        userType: "instructor",
-        user: {
-          id: instructor.instructor_id,
-          name: instructor.name,
-          email: instructor.email,
-        }
-      });
-    } else {
-      res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
-  } catch (err) {
-    console.error('Instructor Login Error:', err.message);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
+  await handleLogin(req, res, 'instructor', 'instructor_id');
 };
 
-export { loginStudent, loginAdmin, loginInstructor };
+// Removed loginAdmin function as per your request
+
+export { loginStudent, loginInstructor };

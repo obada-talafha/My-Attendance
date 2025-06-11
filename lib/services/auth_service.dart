@@ -9,13 +9,13 @@ class AuthService {
   static Future<bool> login(String email, String password, String role) async {
     final endpointMap = {
       'student': '/loginStudent',
-      'admin': '/loginAdmin',
+      // 'admin': '/loginAdmin', // REMOVED THIS LINE
       'instructor': '/loginInstructor',
     };
 
     final endpoint = endpointMap[role];
     if (endpoint == null) {
-
+      print('Invalid role selected: $role'); // Add print for debugging
       return false;
     }
 
@@ -28,7 +28,8 @@ class AuthService {
         body: jsonEncode({'email': email, 'password': password}),
       );
 
-
+      print('Login response status: ${response.statusCode}');
+      print('Login response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -45,8 +46,11 @@ class AuthService {
           return true;
         }
       } else {
+        print('Login failed: ${response.statusCode}');
+        print('Error message: ${jsonDecode(response.body)['message']}');
       }
     } catch (e) {
+      print('Error during login request: $e');
     }
 
     return false;

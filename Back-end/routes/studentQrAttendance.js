@@ -73,7 +73,7 @@ router.post('/', async (req, res) => {
    let verified_face = false; // Initialize face verification status.
    try {
      // Make a POST request to the Flask face verification service.
-     const faceResponse = await axios.post('http://localhost:5000/verify-face', { image: face_image });
+     const faceResponse = await axios.post('https://3482-213-139-63-110.ngrok-free.app/verify-face', { image: face_image });
 
      // Check if the Flask service returned a success status and the student_id matches.
      if (
