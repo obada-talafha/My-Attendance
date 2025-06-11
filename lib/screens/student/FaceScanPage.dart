@@ -10,8 +10,14 @@ import 'student_home.dart';
 class FaceScanPage extends StatefulWidget {
   final String studentId;
   final Map<String, dynamic> qrData;
+  final Map<String, dynamic> sessionInfo; // <--- ADDED: Define sessionInfo here
 
-  const FaceScanPage({Key? key, required this.studentId, required this.qrData}) : super(key: key);
+  const FaceScanPage({
+    Key? key,
+    required this.studentId,
+    required this.qrData,
+    required this.sessionInfo, // <--- ADDED: Add it to the constructor
+  }) : super(key: key);
 
   @override
   State<FaceScanPage> createState() => _FaceScanPageState();
@@ -47,6 +53,7 @@ class _FaceScanPageState extends State<FaceScanPage> {
     } catch (e) {
       // Show an error message if camera initialization fails.
       _showMessage('Failed to initialize camera. Please check camera permissions.');
+      print('Camera initialization error: $e'); // For debugging
     }
   }
 
@@ -54,6 +61,11 @@ class _FaceScanPageState extends State<FaceScanPage> {
   Future<void> _captureAndSendFace() async {
     // Prevent multiple sends or if camera controller is not ready.
     if (_cameraController == null || !_cameraController!.value.isInitialized || isSending) {
+      if (isSending) {
+        _showMessage('Processing previous request...');
+      } else {
+        _showMessage('Camera not ready. Please wait.');
+      }
       return;
     }
 
@@ -74,13 +86,21 @@ class _FaceScanPageState extends State<FaceScanPage> {
       // This should be the main endpoint that handles both QR and face verification.
       final Uri apiUrl = Uri.parse('https://my-attendance-1.onrender.com/mark-attendance');
 
+      // Extract session_id from the sessionInfo received from QRScanPage
+      final String sessionId = widget.sessionInfo['session_id'];
+
       // Prepare the request body.
-      // Ensure 'face_image' key matches what your Express.js backend expects.
+      // Now sending 'session_id' directly as expected by the updated backend's /mark-attendance endpoint.
       final Map<String, dynamic> requestBody = {
         'student_id': widget.studentId,
-        'qr_data': widget.qrData, // Pass the entire QR data object received from QRScanPage
+        'session_id': sessionId, // <--- CHANGED: Send session_id directly
         'face_image': base64Image, // Use 'face_image' as expected by the backend
       };
+
+      print('Sending request to /mark-attendance with:'); // For debugging
+      print('student_id: ${widget.studentId}');
+      print('session_id: $sessionId');
+      print('face_image: ${base64Image.substring(0, 30)}...'); // Print a snippet
 
       // Make the POST request to the backend.
       final response = await http.post(
@@ -111,10 +131,12 @@ class _FaceScanPageState extends State<FaceScanPage> {
         // Handle backend errors based on status code.
         final errorMessage = result['error'] ?? 'Failed to mark attendance with an unknown error.';
         _showMessage(errorMessage);
+        print('Backend error response: ${response.statusCode} - $errorMessage'); // For debugging
       }
     } catch (e) {
       // Catch any network or other unexpected errors.
       _showMessage('An error occurred during face scan or attendance marking: ${e.toString()}');
+      print('Client-side error during _captureAndSendFace: $e'); // For debugging
     } finally {
       // Ensure the sending flag is reset after the operation, regardless of success or failure.
       if (mounted) {
@@ -155,12 +177,23 @@ class _FaceScanPageState extends State<FaceScanPage> {
         child: Stack(
           children: [
             // Display the camera preview.
-            CameraPreview(_cameraController!),
+            // Using a FittedBox to ensure the camera preview covers the available space
+            // while maintaining its aspect ratio.
+            SizedBox(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              child: FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _cameraController!.value.previewSize!.height,
+                  height: _cameraController!.value.previewSize!.width,
+                  child: CameraPreview(_cameraController!),
+                ),
+              ),
+            ),
 
             // Visual overlay for the face scanning area.
-            Positioned(
-              top: 100, // Adjusted position to be higher
-              left: MediaQuery.of(context).size.width / 2 - 125,
+            Center( // Using Center to position the overlay more reliably
               child: Container(
                 width: 250,
                 height: 320,

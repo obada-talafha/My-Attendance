@@ -4,8 +4,9 @@ import axios from 'axios';
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
-  const { student_id, qr_data, face_image } = req.body;
+// New endpoint for initial QR scan validation (without face_image)
+router.post('/verify-qr', async (req, res) => {
+  const { student_id, qr_data } = req.body;
 
   // Initial validation: Ensure all required data is present and correctly formatted.
   if (
@@ -13,11 +14,10 @@ router.post('/', async (req, res) => {
     !qr_data ||
     typeof qr_data !== 'object' ||
     !qr_data.session_id ||
-    !qr_data.qr_token ||
-    !face_image
+    !qr_data.qr_token
   ) {
     // If any required data is missing or invalid, return a 400 Bad Request error.
-    return res.status(400).json({ error: 'Missing or invalid required data' });
+    return res.status(400).json({ error: 'Missing or invalid QR data' });
   }
 
   try {
@@ -69,33 +69,86 @@ router.post('/', async (req, res) => {
       return res.status(200).json({ message: 'You have already scanned the QR code' });
     }
 
-   // ✅ Step 4: Face verification (calls external Flask service).
-   let verified_face = false; // Initialize face verification status.
-   try {
-     // Make a POST request to the Flask face verification service.
-     const faceResponse = await axios.post('https://3482-213-139-63-110.ngrok-free.app/verify-face', { image: face_image });
+    // If QR and enrollment are valid, proceed to face scan
+    return res.status(200).json({
+      message: 'QR verified, proceed to face scan',
+      session_info: { // Pass necessary session info to the client for the next step
+        session_id: session_id,
+        course_name: session.course_name,
+        session_number: session.session_number,
+        session_date: session.session_date
+      }
+    });
 
-     // Check if the Flask service returned a success status and the student_id matches.
-     if (
-       faceResponse.data.status === 'success' &&
-       faceResponse.data.student_id === student_id
-     ) {
-       verified_face = true; // Set to true if verification is successful.
-     } else {
-       // If face verification was unsuccessful (e.g., status is not 'success' or ID mismatch),
-       // AND face verification is mandatory, return an error.
-       console.warn('Face verification returned unsuccessful status or mismatched student_id.');
-       return res.status(400).json({ error: 'Face verification failed or student ID mismatch' });
-     }
-   } catch (faceErr) {
-     // If there's an error calling the Flask service (e.g., network issue, service down),
-     // AND face verification is mandatory, return a 500 error.
-     console.error('Face verification failed:', faceErr.message);
-     return res.status(500).json({ error: 'Face verification service unavailable or encountered an error' });
-   }
+  } catch (error) {
+    // Catch any unexpected errors during the overall process and return a 500 Internal Server Error.
+    console.error('❌ Error verifying QR:', error.message);
+    return res.status(500).json({ error: 'Internal server error', detail: error.message });
+  }
+});
+
+// Original endpoint, now specifically for completing attendance with face image
+router.post('/mark-attendance', async (req, res) => {
+  // Expect session_id directly and face_image for this step
+  const { student_id, session_id, face_image } = req.body;
+
+  // Add validation for these specific fields for this endpoint
+  if (!student_id || !session_id || !face_image) {
+    return res.status(400).json({ error: 'Missing or invalid data for attendance marking' });
+  }
+
+  try {
+    // Re-fetch session details based on session_id to get course_name, session_number, session_date
+    // This is important to ensure data consistency and avoid passing sensitive info unnecessarily
+    const sessionResult = await pool.query(
+      `SELECT course_name, session_number, session_date, qr_token
+       FROM qr_session
+       WHERE session_id = $1`,
+      [session_id]
+    );
+
+    if (sessionResult.rowCount === 0) {
+      return res.status(404).json({ error: 'Session not found for attendance marking' });
+    }
+    const session = sessionResult.rows[0]; // Get session details
+
+    // Re-check if attendance for this student in this session already exists (robustness)
+    const attendanceCheck = await pool.query(
+      `SELECT is_present
+       FROM attendance
+       WHERE student_id = $1 AND course_name = $2 AND session_number = $3 AND session_date = $4`,
+      [student_id, session.course_name, session.session_number, session.session_date]
+    );
+
+    if (attendanceCheck.rowCount > 0) {
+      return res.status(200).json({ message: 'Attendance already marked' });
+    }
+
+    // ✅ Step 4: Face verification (calls external Flask service).
+    let verified_face = false; // Initialize face verification status.
+    try {
+      // Make a POST request to the Flask face verification service.
+      const faceResponse = await axios.post('https://3482-213-139-63-110.ngrok-free.app/verify-face', { image: face_image });
+
+      // Check if the Flask service returned a success status and the student_id matches.
+      if (
+        faceResponse.data.status === 'success' &&
+        faceResponse.data.student_id === student_id
+      ) {
+        verified_face = true; // Set to true if verification is successful.
+      } else {
+        // If face verification was unsuccessful, return an error.
+        console.warn('Face verification returned unsuccessful status or mismatched student_id.');
+        return res.status(400).json({ error: 'Face verification failed or student ID mismatch' });
+      }
+    } catch (faceErr) {
+      // If there's an error calling the Flask service, return a 500 error.
+      console.error('Face verification failed:', faceErr.message);
+      return res.status(500).json({ error: 'Face verification service unavailable or encountered an error' });
+    }
 
     // ✅ Step 5: Insert attendance record into the database.
-    // This step is only reached if QR verification, enrollment, and face verification are successful.
+    // This step is only reached if QR verification (from previous step) and face verification are successful.
     await pool.query(
       `INSERT INTO attendance (
          session_id, student_id, is_present, verified_face,
@@ -105,7 +158,7 @@ router.post('/', async (req, res) => {
       [
         session_id,
         student_id,
-        verified_face, // This will be TRUE at this point if the previous mandatory step passed.
+        verified_face, // This will be TRUE at this point.
         session.session_date,
         session.session_number,
         session.course_name,
