@@ -82,7 +82,7 @@ router.post('/', async (req, res) => {
     // ✅ Step 5: Insert attendance
     await pool.query(
       `INSERT INTO attendance (
-         session_id, student_id, is_present, verified_face,
+         session_id, student_id, is_present,
          marked_at, session_date, session_number, course_name
        )
        VALUES ($1, $2, TRUE, $3, NOW(), $4, $5, $6)`,
