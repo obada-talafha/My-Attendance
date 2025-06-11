@@ -1,7 +1,7 @@
 import pool from '../db/index.js';
-import bcrypt from 'bcrypt'; // Import bcrypt
+import bcrypt from 'bcryptjs'; // Import bcrypt
 
-// Helper function to handle login logic for different user types
+// Helper function to handle login logic for ddifferent user types
 const handleLogin = async (req, res, tableName, idColumnName) => {
   console.log(`REQ BODY (${tableName}):`, req.body);
 
