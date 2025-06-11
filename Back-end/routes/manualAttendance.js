@@ -28,7 +28,7 @@ manualAttendanceRouter.get('/:courseName/:sessionNumber', async (req, res) => {
         WHERE
           is_present = false AND
           course_name = $1 AND -- Filter by course_name
-          session_number < $2::int -- Only count absences BEFORE the current session
+          session_number <= $2::int -- Only count absences BEFORE the current session
         GROUP BY student_id
       ) a_abs ON a_abs.student_id = s.student_id
       LEFT JOIN (
