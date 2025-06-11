@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 
 // Import routes (auth)
-import { loginStudent, loginAdmin, loginInstructor } from './routes/auth.js';
+import { loginStudent, loginInstructor } from './routes/auth.js';
 
 // Student routes
 import { getStudentProfile } from './routes/studentController.js'; // ✅ renamed for clarity
@@ -37,7 +37,6 @@ app.use(express.json());
 
 // 🔐 Auth
 app.post('/loginStudent', loginStudent);
-app.post('/loginAdmin', loginAdmin);
 app.post('/loginInstructor', loginInstructor);
 
 // 🎓 Student
