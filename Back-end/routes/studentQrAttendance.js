@@ -39,7 +39,7 @@ router.post('/', async (req, res) => {
       return res.status(401).json({ error: 'Invalid QR token' });
     }
 
-    // Step 2: Check student enrollment
+    // Step 2: Check student enrollmen
     const enrollResult = await pool.query(
       `SELECT 1
        FROM enrollment
