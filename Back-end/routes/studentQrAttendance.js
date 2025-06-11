@@ -113,7 +113,7 @@ router.post('/mark-attendance', async (req, res) => {
     let verified_face = false;
     try {
       const faceResponse = await axios.post(
-        'https://6e94-2a01-9700-805f-1700-e574-218-d1c6-23ac.ngrok-free.app/verify-face',
+        'https://2ecf-2a01-9700-80d7-c200-adaa-992c-52b5-a020.ngrok-free.app/verify-face',
         {
           image: face_image,
           student_id: student_id // <--- CRUCIAL FIX: Pass student_id to Flask server
