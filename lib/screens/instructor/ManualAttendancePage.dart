@@ -154,8 +154,6 @@ class _ManualAttendancePageState extends State<ManualAttendancePage> {
       for (var s in students) {
         final wasPresent = s["isPresent"];
         if (wasPresent != present) {
-          int abs = int.tryParse(s["absNo"].toString()) ?? 0;
-          s["absNo"] = present ? (abs > 0 ? abs - 1 : 0) : abs + 1;
           s["isPresent"] = present;
         }
       }

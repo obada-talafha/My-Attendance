@@ -50,7 +50,6 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = json.decode(response.body);
-        // CHANGE HERE: Access 'records' key instead of 'students'
         final List<dynamic> data = jsonResponse['records'] ?? [];
         final Set<String> addedIds = {};
         final List<Map<String, dynamic>> uniqueStudents = [];
@@ -174,8 +173,6 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
       for (var s in students) {
         final wasPresent = s["isPresent"] as bool? ?? false;
         if (wasPresent != present) {
-          int abs = int.tryParse(s["absNo"].toString()) ?? 0;
-          s["absNo"] = present ? (abs > 0 ? abs - 1 : 0) : abs + 1;
           s["isPresent"] = present;
         }
       }
@@ -187,6 +184,7 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
   TableRow _buildTableHeader() => TableRow(
     decoration: const BoxDecoration(color: Color(0xFFE8F1FF)),
     children: [
+      // Changed padding and added textAlign for consistency
       _buildHeaderCell("#NO"),
       _buildHeaderCell("Student Name"),
       _buildHeaderCell("#St.No"),
@@ -208,6 +206,7 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
     return TableRow(
       decoration: bgColor != null ? BoxDecoration(color: bgColor) : null,
       children: [
+        // Changed padding for consistency
         _buildCell(s["no"], bold: true),
         _buildCell(s["name"], color: Colors.blueAccent, bold: true),
         _buildCell(s["stNo"]),
@@ -220,32 +219,40 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
               setState(() {
                 final wasPresent = s["isPresent"] as bool? ?? false;
                 if (wasPresent != newValue) {
-                  int abs = int.tryParse(s["absNo"].toString()) ?? 0;
-                  s["absNo"] = newValue ? (abs > 0 ? abs - 1 : 0) : abs + 1;
                   s["isPresent"] = newValue;
                   hasChanges = true;
                 }
               });
             },
             activeColor: Colors.green,
+            // Added inactiveTrackColor for consistency
+            inactiveTrackColor: Colors.redAccent,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHeaderCell(String label) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-    child: Text(label, style: GoogleFonts.jost(fontWeight: FontWeight.bold)),
-  );
-
-  Widget _buildCell(String text, {Color? color, bool bold = false}) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+  // Adjusted padding and added textAlign for consistency
+  Widget _buildHeaderCell(String text) => Padding(
+    padding: const EdgeInsets.all(8),
     child: Text(
       text,
+      textAlign: TextAlign.center, // Added for consistency
+      style: GoogleFonts.jost(fontSize: 12, fontWeight: FontWeight.bold),
+    ),
+  );
+
+  // Adjusted padding and added textAlign for consistency
+  Widget _buildCell(String text, {Color? color, bool bold = false}) => Padding(
+    padding: const EdgeInsets.all(8),
+    child: Text(
+      text,
+      textAlign: TextAlign.center, // Added for consistency
       style: GoogleFonts.jost(
+        fontSize: 12,
         fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-        color: color,
+        color: color ?? Colors.black, // Ensure color is black if not provided
       ),
     ),
   );
@@ -264,6 +271,7 @@ class _ViewAttendanceRecordState extends State<ViewAttendancePage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
+          // Changed title to "Manual Attendance" for design consistency
           "Attendance Record",
           style: GoogleFonts.jost(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black),
         ),
