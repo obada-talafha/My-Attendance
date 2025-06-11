@@ -47,7 +47,7 @@ ViewAttendanceRecord.get('/:courseName/:sessionNumber/:sessionDate', async (req,
         WHERE
           is_present = false AND
           course_name = $1 AND -- Filter by the current course
-          session_number < $2::int -- Count absences before the current session number
+          session_number <= $2::int -- Count absences before the current session number
         GROUP BY student_id
       ) a_abs ON a_abs.student_id = s.student_id
       LEFT JOIN (
