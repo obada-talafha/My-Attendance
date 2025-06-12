@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 
-// Import routes (auth)
+// Import routess (auth)
 import { loginStudent, loginInstructor } from './routes/auth.js';
 
 // Student routes
